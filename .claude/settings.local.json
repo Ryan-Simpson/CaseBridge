@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "Bash(npx vite:*)",
+      "Bash(ls /c/Users/RMS/RMS-Code/CaseBridge/README*)",
+      "Bash(node -e \":*)",
+      "Bash(node --input-type=module -e \":*)",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(taskkill //F //IM node.exe)",
+      "Bash(taskkill /f /im node.exe)",
+      "Bash(powershell -Command \"Get-Process -Name node -ErrorAction SilentlyContinue | Stop-Process -Force\")",
+      "Bash(find /c/Users/RMS/RMS-Code/CaseBridge -name .env* -type f)",
+      "Bash(ls -la /c/Users/RMS/RMS-Code/CaseBridge/.env*)",
+      "Bash(find /c/Users/RMS/RMS-Code/CaseBridge/src -name *Scribe* -type f)",
+      "Bash(npm run:*)"
+    ]
+  }
+}
