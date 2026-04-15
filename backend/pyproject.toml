@@ -13,6 +13,8 @@ dependencies = [
     "pydantic-ai>=0.0.14",
     "instructor>=1.6",
     "json-logic-qubit>=0.9",
+    "pypdf>=5.0",
+    "reportlab>=4.0",
 ]
 
 [tool.uv]

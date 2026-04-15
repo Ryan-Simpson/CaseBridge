@@ -4,15 +4,15 @@ import json
 import uuid
 from typing import Any
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from agents import eligibility as eligibility_agent
-from agents import form_filler as form_filler_agent
 from agents import intake as intake_agent
 from agents import packet as packet_agent
+from agents import pdf_filler
 from agents import profile as profile_agent
 from agents import risk as risk_agent
 from schemas import ActionCard, ClientProfile, EligibilityResult
@@ -57,9 +57,9 @@ class PacketRequest(BaseModel):
     program_ids: list[str]
 
 
-class FormFillRequest(BaseModel):
+class FillFormRequest(BaseModel):
     profile: ClientProfile
-    target_url: str
+    program_id: str
 
 
 @app.get("/health")
@@ -148,16 +148,19 @@ def packet_render(req: PacketRequest) -> list[ActionCard]:
     return packet_agent.run(req.profile, results)
 
 
-@app.post("/packet/fill")
-async def packet_fill(req: FormFillRequest) -> StreamingResponse:
-    """Drive the Playwright MCP server to fill a benefits-portal form.
+@app.post("/packet/fill-form")
+def packet_fill_form(req: FillFormRequest) -> Response:
+    """Fill a deterministic AcroForm PDF template for the requested program.
 
-    Streams agent status events as the form-filler navigates, snapshots,
-    asks Gemma to map fields, and calls browser_fill_form. Never clicks
-    submit — that's the caseworker's job.
+    Takes a ClientProfile and program_id, loads the pre-built template
+    from backend/forms/{program_id}.pdf, populates its AcroForm fields
+    via a static field map, and returns the bytes as application/pdf.
     """
-    async def event_stream():
-        async for event in form_filler_agent.run(req.profile, req.target_url):
-            yield f"data: {json.dumps(event)}\n\n"
-
-    return StreamingResponse(event_stream(), media_type="text/event-stream")
+    pdf_bytes = pdf_filler.run(req.profile, req.program_id)
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f'attachment; filename="{req.program_id}-application.pdf"',
+        },
+    )

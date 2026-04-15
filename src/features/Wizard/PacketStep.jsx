@@ -1,9 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { useCaseSession } from '../../context/useCaseSession'
-import { renderPackets } from '../../lib/llm-client'
+import { fillApplicationForm, renderPackets } from '../../lib/llm-client'
 import { renderPacketPdf, downloadBlob } from '../../lib/packet-pdf'
 import { PROGRAM_ICONS, PROGRAM_NAMES } from '../../lib/programs'
-import FormFillerPanel from './FormFillerPanel'
 
 export default function PacketStep() {
   const { caseSession, setActiveStep, updateAgentStatus } = useCaseSession()
@@ -12,7 +11,7 @@ export default function PacketStep() {
   const [cards, setCards] = useState([])
   const [isLoading, setIsLoading] = useState(eligibleResults.length > 0)
   const [error, setError] = useState(null)
-  const [fillerProgram, setFillerProgram] = useState(null)
+  const [fillingProgram, setFillingProgram] = useState(null)
   const renderedRef = useRef(false)
 
   useEffect(() => {
@@ -46,6 +45,20 @@ export default function PacketStep() {
       downloadBlob(blob, `${card.program_id}-${profile.client_name || 'client'}.pdf`.replace(/\s+/g, '-'))
     } catch (err) {
       setError(`PDF render failed: ${err.message}`)
+    }
+  }
+
+  const handleFillForm = async (card) => {
+    setError(null)
+    setFillingProgram(card.program_id)
+    try {
+      const blob = await fillApplicationForm(profile, card.program_id)
+      const clientName = (profile.client_name || 'client').replace(/\s+/g, '-')
+      downloadBlob(blob, `${card.program_id}-${clientName}-application.pdf`)
+    } catch (err) {
+      setError(`Form fill failed: ${err.message}`)
+    } finally {
+      setFillingProgram(null)
     }
   }
 
@@ -98,19 +111,12 @@ export default function PacketStep() {
             <PacketCard
               key={card.program_id}
               card={card}
+              isFilling={fillingProgram === card.program_id}
               onDownload={() => handleDownload(card)}
-              onFillPortal={() => setFillerProgram(card.program_id)}
+              onFillForm={() => handleFillForm(card)}
             />
           ))}
         </div>
-      )}
-
-      {fillerProgram && (
-        <FormFillerPanel
-          profile={profile}
-          programId={fillerProgram}
-          onClose={() => setFillerProgram(null)}
-        />
       )}
 
       <div className="mt-8 flex items-center justify-between">
@@ -131,7 +137,7 @@ export default function PacketStep() {
   )
 }
 
-function PacketCard({ card, onDownload, onFillPortal }) {
+function PacketCard({ card, isFilling, onDownload, onFillForm }) {
   const icon = PROGRAM_ICONS[card.program_id] || '📋'
   const name = PROGRAM_NAMES[card.program_id] || card.program_id
 
@@ -146,13 +152,14 @@ function PacketCard({ card, onDownload, onFillPortal }) {
             <h3 className="font-semibold text-gray-900">{name}</h3>
             <div className="flex items-center gap-2 flex-shrink-0">
               <button
-                onClick={onFillPortal}
-                className="rounded-lg bg-purple-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-purple-700 transition-colors cursor-pointer flex items-center gap-1.5"
+                onClick={onFillForm}
+                disabled={isFilling}
+                className="rounded-lg bg-purple-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-purple-700 transition-colors cursor-pointer flex items-center gap-1.5 disabled:opacity-60 disabled:cursor-wait"
               >
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456z" />
                 </svg>
-                Fill portal
+                {isFilling ? 'Filling…' : 'Fill application'}
               </button>
               <button
                 onClick={onDownload}

@@ -77,47 +77,12 @@ export async function renderPackets(profile, programIds) {
   return post('/packet/render', { profile, program_ids: programIds })
 }
 
-export async function streamFormFill({
-  profile,
-  targetUrl,
-  onStatus,
-  onFields,
-  onAgentError,
-  onDone,
-}) {
-  const response = await fetch(`${BACKEND_URL}/packet/fill`, {
+export async function fillApplicationForm(profile, programId) {
+  const response = await fetch(`${BACKEND_URL}/packet/fill-form`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ profile, target_url: targetUrl }),
+    body: JSON.stringify({ profile, program_id: programId }),
   })
-  if (!response.ok || !response.body) {
-    throw new Error(`packet/fill → ${response.status}`)
-  }
-
-  const reader = response.body.getReader()
-  const decoder = new TextDecoder()
-  let buffer = ''
-
-  while (true) {
-    const { value, done } = await reader.read()
-    if (done) break
-    buffer += decoder.decode(value, { stream: true })
-
-    let idx
-    while ((idx = buffer.indexOf('\n\n')) >= 0) {
-      const frame = buffer.slice(0, idx)
-      buffer = buffer.slice(idx + 2)
-      const dataLine = frame.split('\n').find((l) => l.startsWith('data: '))
-      if (!dataLine) continue
-      try {
-        const payload = JSON.parse(dataLine.slice(6))
-        if (payload.type === 'status') onStatus?.(payload.message)
-        else if (payload.type === 'fields') onFields?.(payload.fields)
-        else if (payload.type === 'error') onAgentError?.(payload.message)
-        else if (payload.type === 'done') onDone?.(payload)
-      } catch (err) {
-        console.warn('Malformed SSE frame:', err.message)
-      }
-    }
-  }
+  if (!response.ok) throw new Error(`fill-form → ${response.status}`)
+  return await response.blob()
 }
