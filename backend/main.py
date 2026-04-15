@@ -1,12 +1,15 @@
 from __future__ import annotations
 
+import json
 import uuid
 from typing import Any
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
+from agents import intake as intake_agent
 from schemas import ClientProfile, EligibilityResult
 
 app = FastAPI(title="CaseBridge Backend", version="0.1.0")
@@ -18,7 +21,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# In-memory session store — demo only, one process
+# In-memory session store — demo only, one process.
 SESSIONS: dict[str, dict[str, Any]] = {}
 
 
@@ -52,20 +55,48 @@ def health() -> dict[str, str]:
 @app.post("/session/start", response_model=SessionStartResponse)
 def session_start() -> SessionStartResponse:
     session_id = uuid.uuid4().hex
-    SESSIONS[session_id] = {"turns": [], "profile": ClientProfile().model_dump(mode="json")}
+    SESSIONS[session_id] = {
+        "turns": [],
+        "profile": ClientProfile().model_dump(mode="json"),
+    }
     return SessionStartResponse(session_id=session_id)
 
 
 @app.post("/intake/turn")
-def intake_turn(req: IntakeTurnRequest) -> dict[str, str]:
-    # Day 2 will replace this with an SSE stream from the Intake Agent.
-    return {"status": "not_implemented"}
+async def intake_turn(req: IntakeTurnRequest) -> StreamingResponse:
+    session = SESSIONS.get(req.session_id)
+    if session is None:
+        raise HTTPException(status_code=404, detail="Unknown session")
+
+    # Record the user turn before running the agent.
+    session["turns"].append({"role": "user", "text": req.user_text})
+
+    async def event_stream():
+        assistant_text = ""
+        async for event in intake_agent.run(
+            turns=session["turns"],
+            profile=session["profile"],
+            user_text=req.user_text,
+        ):
+            if event["type"] == "delta":
+                assistant_text += event["text"]
+            elif event["type"] == "profile":
+                session["profile"] = event["profile"]
+            yield f"data: {json.dumps(event)}\n\n"
+
+        session["turns"].append({"role": "assistant", "text": assistant_text})
+
+    return StreamingResponse(event_stream(), media_type="text/event-stream")
 
 
 @app.post("/profile/finalize", response_model=ClientProfile)
 def profile_finalize(req: FinalizeRequest) -> ClientProfile:
-    # Day 2 will run the Profile Agent here.
-    return ClientProfile()
+    session = SESSIONS.get(req.session_id)
+    if session is None:
+        raise HTTPException(status_code=404, detail="Unknown session")
+    # Day 2 Path B: the session profile is already merged; just return it.
+    # Day 2 Path A will run a Profile Agent normalization pass here.
+    return ClientProfile(**session["profile"])
 
 
 @app.post("/eligibility/screen", response_model=list[EligibilityResult])

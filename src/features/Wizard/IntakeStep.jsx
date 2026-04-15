@@ -1,12 +1,166 @@
+import { useState, useRef, useEffect, useCallback } from 'react'
+import { useCaseSession } from '../../context/useCaseSession'
+import { streamIntakeTurn } from '../../lib/llm-client'
+import VoiceInput from '../../components/VoiceInput'
+
+const OPENING_MESSAGE = (
+  "Hi, I'm here to help you capture this intake quickly. Can you tell me " +
+  "the client's name and a sentence or two about what brought them in today?"
+)
+
 export default function IntakeStep() {
+  const { caseSession, updateSession, setActiveStep, updateAgentStatus } = useCaseSession()
+  const [messages, setMessages] = useState([
+    { role: 'assistant', text: OPENING_MESSAGE },
+  ])
+  const [input, setInput] = useState('')
+  const [isStreaming, setIsStreaming] = useState(false)
+  const [error, setError] = useState(null)
+  const messagesEndRef = useRef(null)
+
+  // Auto-scroll to newest message.
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
+  }, [messages, isStreaming])
+
+  const handleSubmit = useCallback(async (text) => {
+    const trimmed = text.trim()
+    if (!trimmed || isStreaming || !caseSession.sessionId) return
+
+    setMessages((prev) => [
+      ...prev,
+      { role: 'user', text: trimmed },
+      { role: 'assistant', text: '' },
+    ])
+    setInput('')
+    setIsStreaming(true)
+    setError(null)
+    updateAgentStatus('intake', 'running')
+
+    try {
+      await streamIntakeTurn({
+        sessionId: caseSession.sessionId,
+        userText: trimmed,
+        onDelta: (delta) => {
+          setMessages((prev) => {
+            const next = [...prev]
+            const last = next[next.length - 1]
+            if (last?.role === 'assistant') {
+              next[next.length - 1] = { ...last, text: last.text + delta }
+            }
+            return next
+          })
+        },
+        onProfileUpdate: (profile) => {
+          updateSession({ clientProfile: profile })
+        },
+        onDone: () => {
+          updateAgentStatus('intake', 'done')
+        },
+      })
+    } catch (err) {
+      updateAgentStatus('intake', 'error')
+      setError(`Intake stream failed: ${err.message}`)
+    } finally {
+      setIsStreaming(false)
+    }
+  }, [caseSession.sessionId, isStreaming, updateSession, updateAgentStatus])
+
+  const handleFormSubmit = (e) => {
+    e.preventDefault()
+    handleSubmit(input)
+  }
+
+  const handleFinishIntake = () => {
+    setActiveStep('profile')
+  }
+
+  const canFinish = !!caseSession.clientProfile && !isStreaming
+
   return (
-    <div className="max-w-3xl mx-auto px-4 sm:px-6 py-12">
-      <div className="rounded-2xl border border-dashed border-gray-300 bg-gray-50 p-10 text-center">
-        <h2 className="text-xl font-serif font-bold text-gray-900">Intake — Day 2</h2>
-        <p className="text-sm text-gray-500 mt-2">
-          Conversational interview with Gemma 4 E4B streams here. Profile populates in the
-          sidebar as each turn lands.
+    <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 flex flex-col h-[calc(100vh-3.5rem-6rem)]">
+      <div className="mb-4">
+        <h2 className="text-xl font-serif font-bold text-gray-900">Intake</h2>
+        <p className="text-sm text-gray-500 mt-1">
+          Describe the client's situation in your own words. The agent will ask follow-ups
+          and build a profile as you go.
         </p>
+      </div>
+
+      {error && (
+        <div className="mb-3 rounded-lg border border-red-200 bg-red-50 px-4 py-2.5 text-sm text-red-700">
+          {error}
+        </div>
+      )}
+
+      <div className="flex-1 overflow-y-auto rounded-2xl border border-gray-200 bg-gray-50 p-4 space-y-3">
+        {messages.map((msg, i) => (
+          <MessageBubble key={i} role={msg.role} text={msg.text} isStreaming={isStreaming && i === messages.length - 1 && msg.role === 'assistant'} />
+        ))}
+        <div ref={messagesEndRef} />
+      </div>
+
+      <form onSubmit={handleFormSubmit} className="mt-4 flex items-end gap-2">
+        <textarea
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault()
+              handleSubmit(input)
+            }
+          }}
+          rows={2}
+          placeholder="Type your reply… (Enter to send, Shift+Enter for newline)"
+          disabled={isStreaming}
+          className="flex-1 resize-none rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 disabled:opacity-60"
+        />
+        <VoiceInput onTranscript={(t) => setInput((prev) => (prev ? `${prev} ${t}` : t))} disabled={isStreaming} />
+        <button
+          type="submit"
+          disabled={isStreaming || !input.trim() || !caseSession.sessionId}
+          className="rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-brand-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+        >
+          Send
+        </button>
+      </form>
+
+      <div className="mt-3 flex items-center justify-between text-xs text-gray-400">
+        <span>
+          {caseSession.sessionId
+            ? `Session ${caseSession.sessionId.slice(0, 8)}`
+            : 'Connecting…'}
+        </span>
+        <button
+          onClick={handleFinishIntake}
+          disabled={!canFinish}
+          className="rounded-lg px-3 py-1.5 text-xs font-semibold text-brand-700 bg-brand-50 border border-brand-200 hover:bg-brand-100 transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+        >
+          Finish intake →
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function MessageBubble({ role, text, isStreaming }) {
+  const isUser = role === 'user'
+  return (
+    <div className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
+      <div
+        className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
+          isUser
+            ? 'bg-brand-600 text-white'
+            : 'bg-white border border-gray-200 text-gray-800'
+        }`}
+      >
+        {text}
+        {isStreaming && text.length === 0 && (
+          <span className="inline-block w-2 h-4 align-middle bg-gray-400 animate-pulse" />
+        )}
+        {isStreaming && text.length > 0 && (
+          <span className="inline-block w-1.5 h-4 ml-0.5 align-middle bg-gray-400 animate-pulse" />
+        )}
       </div>
     </div>
   )
