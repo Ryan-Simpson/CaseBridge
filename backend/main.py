@@ -10,6 +10,7 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from agents import eligibility as eligibility_agent
+from agents import form_filler as form_filler_agent
 from agents import intake as intake_agent
 from agents import packet as packet_agent
 from agents import profile as profile_agent
@@ -54,6 +55,11 @@ class EligibilityRequest(BaseModel):
 class PacketRequest(BaseModel):
     profile: ClientProfile
     program_ids: list[str]
+
+
+class FormFillRequest(BaseModel):
+    profile: ClientProfile
+    target_url: str
 
 
 @app.get("/health")
@@ -140,3 +146,18 @@ def packet_render(req: PacketRequest) -> list[ActionCard]:
     if req.program_ids:
         results = [r for r in results if r.program_id in req.program_ids]
     return packet_agent.run(req.profile, results)
+
+
+@app.post("/packet/fill")
+async def packet_fill(req: FormFillRequest) -> StreamingResponse:
+    """Drive the Playwright MCP server to fill a benefits-portal form.
+
+    Streams agent status events as the form-filler navigates, snapshots,
+    asks Gemma to map fields, and calls browser_fill_form. Never clicks
+    submit — that's the caseworker's job.
+    """
+    async def event_stream():
+        async for event in form_filler_agent.run(req.profile, req.target_url):
+            yield f"data: {json.dumps(event)}\n\n"
+
+    return StreamingResponse(event_stream(), media_type="text/event-stream")
