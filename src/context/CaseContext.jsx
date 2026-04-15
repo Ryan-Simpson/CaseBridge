@@ -1,20 +1,38 @@
-import { createContext, useContext, useState, useCallback } from 'react'
+import { useState, useCallback } from 'react'
+import { CaseContext } from './case-store'
 import { RECENT_CASES } from '../data/dashboard-data'
 
-const CaseContext = createContext(null)
-
 const INITIAL_STATE = {
-  clientName: '',
-  transcript: '',
-  generatedNote: '',
-  format: 'SOAP',
-  extractedNeeds: [],
+  // Wizard navigation
+  activeStep: 'dashboard', // 'dashboard' | 'intake' | 'profile' | 'eligibility' | 'packet'
+  sessionId: null,
+
+  // Canonical client data (shape mirrors backend ClientProfile)
+  clientProfile: null,
+
+  // Conversational intake
+  intakeTurns: [], // [{ role: 'user'|'assistant', text }]
+
+  // Agent pipeline status — each agent: 'idle' | 'running' | 'done' | 'error'
+  agentStatus: {
+    intake: 'idle',
+    risk: 'idle',
+    profile: 'idle',
+    research: 'idle',
+    eligibility: 'idle',
+    packet: 'idle',
+  },
+
+  // Risk Agent output (replaces old keyword detector)
   riskFlags: [],
-  connectedFrom: null,
-  // Resource → Form connection
-  selectedResource: null,
-  matchedResources: [],
-  // Dashboard → Scribe preload
+
+  // Eligibility Agent output
+  eligibility: [],
+
+  // Packet Agent output — { programId, pdfUrl, actionCard }[]
+  packets: [],
+
+  // Dashboard → wizard preload
   preloadedTranscript: null,
   preloadedClientName: null,
 }
@@ -46,6 +64,17 @@ export function CaseProvider({ children }) {
       }
       return [...prev, { ...event, timestamp: Date.now() }]
     })
+  }, [])
+
+  const updateAgentStatus = useCallback((agentId, status) => {
+    setCaseSession((prev) => ({
+      ...prev,
+      agentStatus: { ...prev.agentStatus, [agentId]: status },
+    }))
+  }, [])
+
+  const setActiveStep = useCallback((step) => {
+    setCaseSession((prev) => ({ ...prev, activeStep: step }))
   }, [])
 
   // Caseload management
@@ -89,6 +118,7 @@ export function CaseProvider({ children }) {
   return (
     <CaseContext.Provider value={{
       caseSession, updateSession, clearSession,
+      setActiveStep, updateAgentStatus,
       timeline, addTimelineEvent,
       cases, archivedCases, addCase, archiveCase, restoreCase, updateCase,
     }}>
@@ -97,8 +127,3 @@ export function CaseProvider({ children }) {
   )
 }
 
-export function useCaseSession() {
-  const ctx = useContext(CaseContext)
-  if (!ctx) throw new Error('useCaseSession must be used within CaseProvider')
-  return ctx
-}

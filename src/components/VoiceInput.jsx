@@ -12,13 +12,20 @@ export default function VoiceInput({ onTranscript, disabled }) {
   const recognitionRef = useRef(null)
   const wantRecordingRef = useRef(false)
   const onTranscriptRef = useRef(onTranscript)
+  const startNewRecognitionRef = useRef(null)
 
-  onTranscriptRef.current = onTranscript
+  useEffect(() => {
+    onTranscriptRef.current = onTranscript
+  })
 
   const stopRecording = useCallback(() => {
     wantRecordingRef.current = false
     if (recognitionRef.current) {
-      try { recognitionRef.current.stop() } catch {}
+      try {
+        recognitionRef.current.stop()
+      } catch {
+        // recognition already stopped
+      }
       recognitionRef.current = null
     }
     setIsRecording(false)
@@ -68,20 +75,25 @@ export default function VoiceInput({ onTranscript, disabled }) {
       }
 
       setTimeout(() => {
-        if (wantRecordingRef.current) {
-          try {
-            const newRec = startNewRecognition()
+        if (!wantRecordingRef.current) return
+        try {
+          const newRec = startNewRecognitionRef.current?.()
+          if (newRec) {
             recognitionRef.current = newRec
             newRec.start()
-          } catch {
-            stopRecording()
           }
+        } catch {
+          stopRecording()
         }
       }, 300)
     }
 
     return recognition
   }, [stopRecording])
+
+  useEffect(() => {
+    startNewRecognitionRef.current = startNewRecognition
+  }, [startNewRecognition])
 
   const startRecording = useCallback(async () => {
     if (!SpeechRecognition || disabled) return
@@ -119,7 +131,11 @@ export default function VoiceInput({ onTranscript, disabled }) {
     return () => {
       wantRecordingRef.current = false
       if (recognitionRef.current) {
-        try { recognitionRef.current.stop() } catch {}
+        try {
+          recognitionRef.current.stop()
+        } catch {
+          // recognition already stopped
+        }
       }
     }
   }, [])

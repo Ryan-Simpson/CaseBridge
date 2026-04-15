@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { useCaseSession } from '../context/CaseContext'
+import { useCaseSession } from '../context/useCaseSession'
 
 function getGreeting() {
   const hour = new Date().getHours()
@@ -208,7 +208,7 @@ function AddClientModal({ onClose, onAdd }) {
   )
 }
 
-export default function Dashboard({ onNavigate }) {
+export default function Dashboard({ onStartWizard }) {
   const { clearSession, updateSession, cases, archivedCases, addCase, archiveCase, restoreCase } = useCaseSession()
   const [showAddModal, setShowAddModal] = useState(false)
   const [showArchived, setShowArchived] = useState(false)
@@ -219,7 +219,7 @@ export default function Dashboard({ onNavigate }) {
       preloadedTranscript: caseData.transcript || '',
       preloadedClientName: caseData.clientName,
     })
-    onNavigate('scribe')
+    onStartWizard()
   }
 
   const handleArchive = (e, caseId) => {
@@ -232,7 +232,6 @@ export default function Dashboard({ onNavigate }) {
   }
 
   const activeCases = cases.filter(c => c.status !== 'Closed')
-  const closedCases = cases.filter(c => c.status === 'Closed')
   const followUps = cases.filter(c => c.status === 'Follow-up')
 
   return (
@@ -261,31 +260,13 @@ export default function Dashboard({ onNavigate }) {
           </p>
           <div className="flex flex-wrap gap-3">
             <button
-              onClick={() => onNavigate('scribe')}
+              onClick={onStartWizard}
               className="inline-flex items-center gap-2 px-5 py-2.5 bg-white text-brand-700 font-semibold text-sm rounded-lg hover:bg-blue-50 transition-colors cursor-pointer shadow-sm"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 01-3-3V4.5a3 3 0 116 0v8.25a3 3 0 01-3 3z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
               </svg>
-              New Case Note
-            </button>
-            <button
-              onClick={() => onNavigate('resources')}
-              className="inline-flex items-center gap-2 px-5 py-2.5 bg-white/15 text-white font-semibold text-sm rounded-lg hover:bg-white/25 transition-colors cursor-pointer backdrop-blur-sm border border-white/20"
-            >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
-              </svg>
-              Find Resources
-            </button>
-            <button
-              onClick={() => onNavigate('forms')}
-              className="inline-flex items-center gap-2 px-5 py-2.5 bg-white/15 text-white font-semibold text-sm rounded-lg hover:bg-white/25 transition-colors cursor-pointer backdrop-blur-sm border border-white/20"
-            >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15a2.25 2.25 0 012.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25z" />
-              </svg>
-              Fill Forms
+              New Case
             </button>
           </div>
         </div>
