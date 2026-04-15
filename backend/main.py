@@ -10,6 +10,7 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from agents import intake as intake_agent
+from agents import profile as profile_agent
 from schemas import ClientProfile, EligibilityResult
 
 app = FastAPI(title="CaseBridge Backend", version="0.1.0")
@@ -36,6 +37,11 @@ class IntakeTurnRequest(BaseModel):
 
 class FinalizeRequest(BaseModel):
     session_id: str
+
+
+class LanguageRequest(BaseModel):
+    session_id: str
+    language: str
 
 
 class EligibilityRequest(BaseModel):
@@ -89,14 +95,30 @@ async def intake_turn(req: IntakeTurnRequest) -> StreamingResponse:
     return StreamingResponse(event_stream(), media_type="text/event-stream")
 
 
-@app.post("/profile/finalize", response_model=ClientProfile)
-def profile_finalize(req: FinalizeRequest) -> ClientProfile:
+@app.post("/session/language")
+def set_language(req: LanguageRequest) -> dict[str, str]:
     session = SESSIONS.get(req.session_id)
     if session is None:
         raise HTTPException(status_code=404, detail="Unknown session")
-    # Day 2 Path B: the session profile is already merged; just return it.
-    # Day 2 Path A will run a Profile Agent normalization pass here.
-    return ClientProfile(**session["profile"])
+    language = req.language.strip()
+    if not language or len(language) > 64:
+        raise HTTPException(status_code=400, detail="Language must be 1–64 characters")
+    session["profile"]["preferred_language"] = language
+    return {"language": language}
+
+
+@app.post("/profile/finalize", response_model=ClientProfile)
+async def profile_finalize(req: FinalizeRequest) -> ClientProfile:
+    session = SESSIONS.get(req.session_id)
+    if session is None:
+        raise HTTPException(status_code=404, detail="Unknown session")
+
+    normalized = await profile_agent.run(
+        turns=session["turns"],
+        partial=session["profile"],
+    )
+    session["profile"] = normalized.model_dump(mode="json")
+    return normalized
 
 
 @app.post("/eligibility/screen", response_model=list[EligibilityResult])

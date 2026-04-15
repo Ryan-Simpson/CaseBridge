@@ -1,8 +1,40 @@
+import { useEffect, useRef, useState } from 'react'
 import { useCaseSession } from '../../context/useCaseSession'
+import { finalizeProfile } from '../../lib/llm-client'
 
 export default function ProfileReviewStep() {
-  const { caseSession, setActiveStep } = useCaseSession()
+  const { caseSession, updateSession, setActiveStep, updateAgentStatus } = useCaseSession()
   const profile = caseSession.clientProfile
+  // Start in the "normalizing" state when preconditions are met, so the
+  // effect body doesn't need to call setState synchronously.
+  const [isNormalizing, setIsNormalizing] = useState(
+    () => !!(caseSession.sessionId && caseSession.clientProfile)
+  )
+  const [normalizeError, setNormalizeError] = useState(null)
+  const finalizedRef = useRef(false)
+
+  useEffect(() => {
+    if (finalizedRef.current || !caseSession.sessionId || !profile) return
+    finalizedRef.current = true
+    // All state updates live inside Promise callbacks so the effect body
+    // itself never calls setState synchronously.
+    Promise.resolve()
+      .then(() => {
+        updateAgentStatus('profile', 'running')
+        return finalizeProfile(caseSession.sessionId)
+      })
+      .then((normalized) => {
+        updateSession({ clientProfile: normalized })
+        updateAgentStatus('profile', 'done')
+      })
+      .catch((err) => {
+        setNormalizeError(`Normalization failed: ${err.message}`)
+        updateAgentStatus('profile', 'error')
+      })
+      .finally(() => {
+        setIsNormalizing(false)
+      })
+  }, [caseSession.sessionId, profile, updateSession, updateAgentStatus])
 
   if (!profile) {
     return (
@@ -31,6 +63,12 @@ export default function ProfileReviewStep() {
           Verify the facts captured from the interview. These feed eligibility screening
           and packet generation.
         </p>
+        {isNormalizing && (
+          <p className="text-xs text-brand-600 mt-2">Normalizing profile with Gemma…</p>
+        )}
+        {normalizeError && (
+          <p className="text-xs text-amber-600 mt-2">{normalizeError}</p>
+        )}
       </div>
 
       <div className="rounded-2xl border border-gray-200 bg-white shadow-sm divide-y divide-gray-100">
@@ -45,6 +83,11 @@ export default function ProfileReviewStep() {
           <Field label="City" value={profile.city} />
           <Field label="State" value={profile.state} />
           <Field label="ZIP" value={profile.zip_code} />
+        </Section>
+
+        <Section title="Contact">
+          <Field label="Phone" value={profile.phone_number} />
+          <Field label="Email" value={profile.email} />
         </Section>
 
         <Section title="Household">

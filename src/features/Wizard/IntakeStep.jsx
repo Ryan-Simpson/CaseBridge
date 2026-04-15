@@ -1,15 +1,21 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { useCaseSession } from '../../context/useCaseSession'
-import { streamIntakeTurn } from '../../lib/llm-client'
+import { streamIntakeTurn, setSessionLanguage } from '../../lib/llm-client'
 import VoiceInput from '../../components/VoiceInput'
 
 const OPENING_MESSAGE = (
   "Hi, I'm here to help you capture this intake quickly. Can you tell me " +
-  "the client's name and a sentence or two about what brought them in today?"
+  "the client's name and a sentence or two about what brought them in today? " +
+  "You can change the language above to respond in any other language."
 )
 
 export default function IntakeStep() {
   const { caseSession, updateSession, setActiveStep, updateAgentStatus } = useCaseSession()
+  // Seed the language from the current profile if we have one — this keeps
+  // the UI in sync with the backend when the user navigates Intake → Profile
+  // Review → back to Intake without starting a new case.
+  const initialLanguage = caseSession.clientProfile?.preferred_language || 'English'
+  const [language, setLanguage] = useState(initialLanguage)
   const [messages, setMessages] = useState([
     { role: 'assistant', text: OPENING_MESSAGE },
   ])
@@ -17,6 +23,22 @@ export default function IntakeStep() {
   const [isStreaming, setIsStreaming] = useState(false)
   const [error, setError] = useState(null)
   const messagesEndRef = useRef(null)
+  const committedLanguageRef = useRef(initialLanguage)
+
+  const commitLanguage = useCallback(async () => {
+    const value = language.trim() || 'English'
+    if (value === committedLanguageRef.current) return
+    if (!caseSession.sessionId) {
+      committedLanguageRef.current = value
+      return
+    }
+    try {
+      await setSessionLanguage(caseSession.sessionId, value)
+      committedLanguageRef.current = value
+    } catch (err) {
+      setError(`Could not update language: ${err.message}`)
+    }
+  }, [language, caseSession.sessionId])
 
   // Auto-scroll to newest message.
   useEffect(() => {
@@ -37,6 +59,7 @@ export default function IntakeStep() {
     setError(null)
     updateAgentStatus('intake', 'running')
 
+    let hadAgentError = false
     try {
       await streamIntakeTurn({
         sessionId: caseSession.sessionId,
@@ -54,8 +77,13 @@ export default function IntakeStep() {
         onProfileUpdate: (profile) => {
           updateSession({ clientProfile: profile })
         },
+        onAgentError: (message) => {
+          hadAgentError = true
+          setError(`Agent: ${message}`)
+          updateAgentStatus('intake', 'error')
+        },
         onDone: () => {
-          updateAgentStatus('intake', 'done')
+          if (!hadAgentError) updateAgentStatus('intake', 'done')
         },
       })
     } catch (err) {
@@ -79,12 +107,36 @@ export default function IntakeStep() {
 
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 flex flex-col h-[calc(100vh-3.5rem-6rem)]">
-      <div className="mb-4">
-        <h2 className="text-xl font-serif font-bold text-gray-900">Intake</h2>
-        <p className="text-sm text-gray-500 mt-1">
-          Describe the client's situation in your own words. The agent will ask follow-ups
-          and build a profile as you go.
-        </p>
+      <div className="mb-4 flex items-start justify-between gap-4">
+        <div>
+          <h2 className="text-xl font-serif font-bold text-gray-900">Intake</h2>
+          <p className="text-sm text-gray-500 mt-1">
+            Describe the client's situation in your own words. The agent will ask follow-ups
+            and build a profile as you go.
+          </p>
+        </div>
+        <div className="flex flex-col items-end gap-1">
+          <label htmlFor="intake-language" className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">
+            Language
+          </label>
+          <input
+            id="intake-language"
+            type="text"
+            value={language}
+            onChange={(e) => setLanguage(e.target.value)}
+            onBlur={commitLanguage}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault()
+                e.currentTarget.blur()
+              }
+            }}
+            disabled={isStreaming}
+            placeholder="English"
+            title="Type any language — Spanish, Vietnamese, Mandarin Chinese, Tagalog, etc."
+            className="w-40 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 disabled:opacity-50"
+          />
+        </div>
       </div>
 
       {error && (

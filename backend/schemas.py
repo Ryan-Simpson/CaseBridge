@@ -18,7 +18,6 @@ Need = Literal[
 ]
 
 Severity = Literal["red", "amber"]
-Language = Literal["en", "es"]
 
 
 class HouseholdMember(BaseModel):
@@ -39,12 +38,15 @@ class RiskFlag(BaseModel):
 class ClientProfile(BaseModel):
     client_name: str | None = None
     date_of_birth: date | None = None
-    preferred_language: Language = "en"
+    preferred_language: str = "English"
 
     address: str | None = None
     city: str | None = None
     state: str | None = None
     zip_code: str | None = None
+
+    phone_number: str | None = None
+    email: str | None = None
 
     household_size: int | None = None
     household_members: list[HouseholdMember] = Field(default_factory=list)

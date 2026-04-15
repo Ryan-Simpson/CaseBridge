@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Bootstrap Ollama with the Intake model for CaseBridge.
-# Gemma 4 E4B is the production target; gemma3:4b is a temporary placeholder
-# until Gemma 4 E4B publishes to the Ollama registry.
+# Default model is Gemma 4 E4B (edge variant, 9.6 GB). Fits 16 GB GPUs
+# comfortably with 128K context and multimodal input support.
 
 set -euo pipefail
 
@@ -10,7 +10,7 @@ if ! command -v ollama >/dev/null 2>&1; then
     exit 1
 fi
 
-MODEL="${CASEBRIDGE_MODEL:-gemma3:4b}"
+MODEL="${CASEBRIDGE_MODEL:-gemma4:e4b}"
 
 echo "Pulling $MODEL..."
 ollama pull "$MODEL"

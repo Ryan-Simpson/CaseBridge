@@ -16,7 +16,18 @@ export async function startSession() {
   return post('/session/start', {})
 }
 
-export async function streamIntakeTurn({ sessionId, userText, onDelta, onProfileUpdate, onDone }) {
+export async function setSessionLanguage(sessionId, language) {
+  return post('/session/language', { session_id: sessionId, language })
+}
+
+export async function streamIntakeTurn({
+  sessionId,
+  userText,
+  onDelta,
+  onProfileUpdate,
+  onAgentError,
+  onDone,
+}) {
   const response = await fetch(`${BACKEND_URL}/intake/turn`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -45,9 +56,10 @@ export async function streamIntakeTurn({ sessionId, userText, onDelta, onProfile
         const payload = JSON.parse(dataLine.slice(6))
         if (payload.type === 'delta') onDelta?.(payload.text)
         else if (payload.type === 'profile') onProfileUpdate?.(payload.profile)
+        else if (payload.type === 'error') onAgentError?.(payload.message)
         else if (payload.type === 'done') onDone?.(payload)
-      } catch {
-        // ignore malformed frames
+      } catch (err) {
+        console.warn('Malformed SSE frame:', err.message)
       }
     }
   }
@@ -63,9 +75,4 @@ export async function screenEligibility(profile) {
 
 export async function renderPackets(profile, programIds) {
   return post('/packet/render', { profile, program_ids: programIds })
-}
-
-export async function backendHealth() {
-  const response = await fetch(`${BACKEND_URL}/health`)
-  return response.ok
 }

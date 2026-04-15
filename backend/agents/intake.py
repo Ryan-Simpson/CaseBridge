@@ -1,98 +1,241 @@
-"""Intake Agent — conversational interview.
+"""Intake Agent — conversational interview backed by local Gemma.
 
-Day 2 Path B: deterministic mock. Returns scripted responses token-by-token
-so the SSE streaming pipeline can be built and verified without a live
-Ollama dependency. Day 2 Path A (follow-up commit) replaces the script with
-real Gemma streaming via the ollama Python client.
+Two LLM calls per user turn:
+
+1. **Conversational response** — streams word-by-word from Gemma, using the
+   intake system prompt plus the rolling chat history. This is what the
+   caseworker sees in the chat bubble.
+
+2. **Profile extraction** — after the response completes, a second
+   schema-constrained call extracts any new facts from the latest user turn
+   and emits them as a patch to the frontend.
+
+Splitting extraction from conversation keeps each prompt small and lets us
+use structured output (Ollama's `format=` parameter) for the extraction step
+without distorting the conversational tone of the first call.
 """
 
 from __future__ import annotations
 
-import asyncio
+import json
 from collections.abc import AsyncIterator
 from typing import Any
 
+from ollama import AsyncClient
+
+from agents._common import MODEL, OLLAMA_HOST, PROMPTS_DIR, sanitize_patch
 from schemas import ClientProfile, HouseholdMember
 
+_INTAKE_SYSTEM = (PROMPTS_DIR / "intake_en.md").read_text()
+_EXTRACT_SYSTEM = (PROMPTS_DIR / "profile_extract.md").read_text()
 
-# Shown to the user when the chat opens — no API call involved.
-OPENING_MESSAGE = (
-    "Hi, I'm here to help you capture this intake quickly. Can you tell me "
-    "the client's name and a sentence or two about what brought them in today?"
-)
 
-# Responses to user turns. INTAKE_SCRIPT[0] is the reply to the first user
-# message, [1] to the second, etc.
-INTAKE_SCRIPT: list[dict[str, Any]] = [
-    {
-        "response": (
-            "Thank you for sharing that. To check eligibility for school-linked "
-            "programs, could you share the children's names and ages?"
-        ),
-        "profile_patch": {
-            "client_name": "Maria Santos",
-            "needs": ["housing", "food", "employment"],
-            "household_size": 3,
-            "preferred_language": "en",
-        },
-    },
-    {
-        "response": (
-            "Got it. Now, what is the household's current monthly income — "
-            "including any unemployment benefits or other sources?"
-        ),
-        "profile_patch": {
-            "household_members": [
-                {"name": "Sofia Santos", "age": 8, "relationship": "daughter", "student": True},
-                {"name": "Diego Santos", "age": 6, "relationship": "son", "student": True},
-            ],
-        },
-    },
-    {
-        "response": (
-            "Thanks. What city and state is the household in? This determines "
-            "which local programs apply."
-        ),
-        "profile_patch": {
-            "monthly_income": "1200",
-            "income_sources": ["Unemployment Insurance"],
-            "monthly_rent": "1450",
-        },
-    },
-    {
-        "response": (
-            "Perfect — that's enough for a first pass. I've captured the key "
-            "facts. Click 'Finish intake' to review the profile and screen "
-            "for eligible programs."
-        ),
-        "profile_patch": {
-            "city": "Los Angeles",
-            "state": "CA",
-        },
-    },
+# Fields the intake must capture before the caseworker can finish.
+# Order matters — the agent asks about them in this order, top to bottom.
+# Each entry is (profile_key, short_human_label).
+REQUIRED_FIELDS: list[tuple[str, str]] = [
+    ("client_name", "client's full name"),
+    ("date_of_birth", "client's date of birth"),
+    ("household_size", "how many people live in the household"),
+    ("household_members", "the names and ages of each household member"),
+    ("address", "street address (with apartment or unit if applicable)"),
+    ("city", "city"),
+    ("state", "state"),
+    ("zip_code", "ZIP code"),
+    ("phone_number", "phone number"),
+    ("email", "email address"),
+    ("monthly_income", "total monthly income (including benefits)"),
+    ("income_sources", "where the income comes from (job, unemployment, SSI, etc.)"),
+    ("monthly_rent", "monthly rent or mortgage payment"),
+    ("utility_cost", "approximate monthly utility cost (electric, gas, water)"),
+    ("needs", "the main challenges the client is facing (food, housing, etc.)"),
 ]
 
 
-DEFAULT_DONE_RESPONSE = (
-    "I already have the key facts for this intake. Click 'Finish intake' "
-    "to continue to the profile review."
-)
+def _compute_missing(profile: dict[str, Any]) -> list[tuple[str, str]]:
+    """Compute which required fields are still unfilled. Order is significant."""
+    missing: list[tuple[str, str]] = []
+    for key, label in REQUIRED_FIELDS:
+        value = profile.get(key)
+        if value in (None, "", [], {}):
+            missing.append((key, label))
+            continue
+        # Special case: household_members may be partially complete.
+        if key == "household_members":
+            size = profile.get("household_size")
+            if isinstance(value, list) and size and len(value) < size - 1:
+                # We expect size - 1 members (client not listed in members).
+                missing.append((key, label))
+    return missing
+
+
+def _client() -> AsyncClient:
+    return AsyncClient(host=OLLAMA_HOST)
+
+
+def _build_chat_messages(
+    turns: list[dict[str, str]],
+    profile: dict[str, Any],
+) -> list[dict[str, str]]:
+    """Assemble messages for the conversational chat call."""
+    captured = {
+        k: v for k, v in profile.items()
+        if v not in (None, "", [], {}) and k not in ("confidence", "declined_fields")
+    }
+    missing = _compute_missing(profile)
+
+    if missing:
+        missing_block = "\n".join(f"- {label}" for _, label in missing)
+        next_field_label = missing[0][1]
+        status_block = (
+            f"FIELDS STILL MISSING ({len(missing)} remaining):\n{missing_block}\n\n"
+            f"NEXT QUESTION MUST BE ABOUT: {next_field_label}\n\n"
+            "ABSOLUTE RULES:\n"
+            "1. Your reply MUST end with a short specific question about the "
+            "NEXT QUESTION field listed above. No exceptions.\n"
+            "2. You are FORBIDDEN from using any of these phrases unless the "
+            "missing list is empty: "
+            "'you have provided all', 'you've given me everything', "
+            "'all the necessary information', 'we have everything we need', "
+            "'click Finish intake', 'you can continue', 'you're done'.\n"
+            "3. Never reply with just 'Thank you' or 'I understand' — always "
+            "follow with the next question.\n"
+            f"4. There are still {len(missing)} field(s) to capture. Keep going."
+        )
+    else:
+        status_block = (
+            "ALL REQUIRED FIELDS CAPTURED. Your reply MUST say exactly one "
+            "thing: acknowledge the last answer in one sentence, then tell "
+            "the caseworker they can click 'Finish intake' to continue. "
+            "Do NOT ask any more questions."
+        )
+
+    system_with_context = (
+        f"{_INTAKE_SYSTEM}\n\n"
+        f"CURRENT PARTIAL PROFILE (already captured — do not re-ask):\n"
+        f"{json.dumps(captured, indent=2, default=str)}\n\n"
+        f"{status_block}"
+    )
+    messages = [{"role": "system", "content": system_with_context}]
+    for turn in turns:
+        role = turn.get("role")
+        if role in ("user", "assistant") and turn.get("text"):
+            messages.append({"role": role, "content": turn["text"]})
+    return messages
+
+
+def _extract_schema() -> dict[str, Any]:
+    """JSON schema used to constrain the extraction call's output.
+
+    `additionalProperties: false` is critical — without it Ollama's
+    structured-output grammar lets the model invent keys like `"name"`
+    (instead of `client_name`). Nested objects must also set it.
+    """
+    return {
+        "type": "object",
+        "additionalProperties": False,
+        "properties": {
+            "client_name": {"type": "string"},
+            "date_of_birth": {"type": "string", "format": "date"},
+            "address": {"type": "string"},
+            "city": {"type": "string"},
+            "state": {"type": "string"},
+            "zip_code": {"type": "string"},
+            "phone_number": {"type": "string"},
+            "email": {"type": "string"},
+            "household_size": {"type": "integer", "minimum": 1},
+            "household_members": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "additionalProperties": False,
+                    "properties": {
+                        "name": {"type": "string", "minLength": 1},
+                        "age": {"type": "integer", "minimum": 0, "maximum": 120},
+                        "relationship": {"type": "string"},
+                        "student": {"type": "boolean"},
+                        "disability": {"type": "boolean"},
+                    },
+                    "required": ["name", "age"],
+                },
+            },
+            "monthly_income": {"type": "number"},
+            "income_sources": {"type": "array", "items": {"type": "string"}},
+            "monthly_rent": {"type": "number"},
+            "utility_cost": {"type": "number"},
+            "needs": {
+                "type": "array",
+                "items": {
+                    "type": "string",
+                    "enum": [
+                        "food", "housing", "healthcare", "childcare",
+                        "utilities", "legal", "mental_health", "employment",
+                    ],
+                },
+            },
+        },
+    }
+
+
+async def _extract_patch(
+    user_text: str,
+    profile: dict[str, Any],
+) -> dict[str, Any]:
+    """Second LLM call: extract structured facts from the latest user turn."""
+    profile_snapshot = {
+        k: v for k, v in profile.items()
+        if v not in (None, "", [], {}) and k not in ("confidence", "declined_fields")
+    }
+    messages = [
+        {"role": "system", "content": _EXTRACT_SYSTEM},
+        {
+            "role": "user",
+            "content": (
+                f"CURRENT PROFILE:\n{json.dumps(profile_snapshot, default=str)}\n\n"
+                f"CASEWORKER JUST SAID:\n{user_text}\n\n"
+                f"Return a JSON object with ONLY new facts from this turn."
+            ),
+        },
+    ]
+    response = await _client().chat(
+        model=MODEL,
+        messages=messages,
+        format=_extract_schema(),
+        options={"temperature": 0.0},
+    )
+    raw = response["message"]["content"]
+    try:
+        patch = json.loads(raw)
+    except json.JSONDecodeError:
+        return {}
+    patch = sanitize_patch(patch)
+    return {k: v for k, v in patch.items() if v not in (None, "", [], {})}
 
 
 def _merge_profile(current: dict[str, Any], patch: dict[str, Any]) -> dict[str, Any]:
-    """Merge a flat patch into the current profile dict. Lists replace."""
+    """Merge a flat patch into the current profile dict.
+
+    Lists replace by default (e.g. `household_members` — the latest turn's
+    member list is authoritative). `needs` is the exception: it accumulates
+    across turns so the caseworker can mention multiple needs over the
+    course of the interview without earlier ones being lost.
+    """
     merged = dict(current)
     for key, value in patch.items():
         if value is None:
             continue
-        merged[key] = value
+        if key == "needs" and isinstance(value, list) and current.get("needs"):
+            merged[key] = sorted(set(current["needs"]) | set(value))
+        else:
+            merged[key] = value
     return merged
 
 
 def _validated_profile(raw: dict[str, Any]) -> dict[str, Any]:
-    """Round-trip through ClientProfile to get JSON-safe output."""
+    """Round-trip through ClientProfile to get JSON-safe, validated output."""
     household_members = [
-        HouseholdMember(**m) for m in raw.get("household_members", [])
+        HouseholdMember(**m) if isinstance(m, dict) else m
+        for m in raw.get("household_members", [])
     ]
     profile = ClientProfile(**{**raw, "household_members": household_members})
     return profile.model_dump(mode="json")
@@ -109,28 +252,48 @@ async def run(
       {type: 'delta',   text: str}
       {type: 'profile', profile: dict}
       {type: 'done'}
+      {type: 'error',   message: str}
     """
-    # `turns` already includes the current user turn appended by main.py,
-    # so user_turn_count is this turn's 1-indexed position.
-    user_turn_count = sum(1 for t in turns if t.get("role") == "user")
-    idx = user_turn_count - 1
+    messages = _build_chat_messages(turns, profile)
 
-    if 0 <= idx < len(INTAKE_SCRIPT):
-        script = INTAKE_SCRIPT[idx]
-        response_text = script["response"]
-        patch = script["profile_patch"]
-    else:
-        response_text = DEFAULT_DONE_RESPONSE
+    try:
+        stream = await _client().chat(
+            model=MODEL,
+            messages=messages,
+            stream=True,
+            options={"temperature": 0.4},
+        )
+        async for chunk in stream:
+            delta = chunk.get("message", {}).get("content", "")
+            if delta:
+                yield {"type": "delta", "text": delta}
+    except Exception as exc:  # network / Ollama down / model missing
+        yield {
+            "type": "error",
+            "message": f"Gemma stream failed: {exc}",
+        }
+        yield {"type": "done"}
+        return
+
+    # Second pass: extract a profile patch from the latest user turn.
+    try:
+        patch = await _extract_patch(user_text, profile)
+    except Exception as exc:
         patch = {}
+        yield {
+            "type": "error",
+            "message": f"Profile extraction failed (non-fatal): {exc}",
+        }
 
-    # Stream the response word-by-word so the frontend sees real tokens.
-    for word in response_text.split(" "):
-        yield {"type": "delta", "text": word + " "}
-        await asyncio.sleep(0.03)
-
-    # Merge and emit the updated profile (if any new facts).
     if patch:
         merged = _merge_profile(profile, patch)
-        yield {"type": "profile", "profile": _validated_profile(merged)}
+        try:
+            validated = _validated_profile(merged)
+            yield {"type": "profile", "profile": validated}
+        except Exception as exc:
+            yield {
+                "type": "error",
+                "message": f"Profile validation failed: {exc}",
+            }
 
     yield {"type": "done"}
