@@ -12,7 +12,7 @@ dependencies = [
     "langgraph>=0.2",
     "pydantic-ai>=0.0.14",
     "instructor>=1.6",
-    "json-logic-py>=0.1",
+    "json-logic-qubit>=0.9",
 ]
 
 [tool.uv]

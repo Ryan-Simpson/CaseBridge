@@ -1,0 +1,67 @@
+{
+  "program_id": "erap",
+  "name": "Emergency Rental Assistance",
+  "agency": "California Business, Consumer Services and Housing Agency",
+  "description": "Emergency rental assistance for tenants at risk of eviction due to income loss.",
+  "conditions": [
+    {
+      "id": "state_ca",
+      "label": "Household is in California",
+      "check": { "==": [{ "var": "state" }, "CA"] }
+    },
+    {
+      "id": "has_rent",
+      "label": "Household has a monthly rent payment",
+      "check": {
+        "and": [
+          { "!=": [{ "var": "monthly_rent" }, null] },
+          { ">": [{ "var": "monthly_rent" }, 0] }
+        ]
+      }
+    },
+    {
+      "id": "housing_burden",
+      "label": "Rent exceeds 40% of monthly income (severe cost burden)",
+      "check": {
+        "<=": [
+          {
+            "*": [
+              0.4,
+              { "var": "monthly_income" }
+            ]
+          },
+          { "var": "monthly_rent" }
+        ]
+      }
+    },
+    {
+      "id": "income_below_ami",
+      "label": "Household income below 80% AMI (simplified cap)",
+      "check": {
+        "<=": [
+          { "var": "monthly_income" },
+          {
+            "+": [
+              3000,
+              { "*": [1000, { "-": [{ "var": "household_size" }, 1] }] }
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "required_fields": ["state", "monthly_rent", "monthly_income", "household_size"],
+  "required_docs": [
+    "Lease or rental agreement",
+    "Proof of income",
+    "Landlord name and contact info",
+    "Government ID",
+    "Eviction notice or past-due rent statement (if applicable)"
+  ],
+  "submission_url": "https://housing.ca.gov/resources/renter.html",
+  "deadline": "Programs vary by county. Apply as soon as possible.",
+  "sources": [
+    "https://housing.ca.gov/resources/renter.html",
+    "80% AMI 2025 LA County single = ~$66k/yr ≈ $5500/mo; simplified to $3000 for demo"
+  ]
+}

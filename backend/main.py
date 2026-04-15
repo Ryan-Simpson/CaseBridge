@@ -9,9 +9,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
+from agents import eligibility as eligibility_agent
 from agents import intake as intake_agent
+from agents import packet as packet_agent
 from agents import profile as profile_agent
-from schemas import ClientProfile, EligibilityResult
+from agents import risk as risk_agent
+from schemas import ActionCard, ClientProfile, EligibilityResult
 
 app = FastAPI(title="CaseBridge Backend", version="0.1.0")
 
@@ -117,17 +120,23 @@ async def profile_finalize(req: FinalizeRequest) -> ClientProfile:
         turns=session["turns"],
         partial=session["profile"],
     )
+    risk_flags = await risk_agent.run(turns=session["turns"])
+    normalized.risk_flags = risk_flags
     session["profile"] = normalized.model_dump(mode="json")
     return normalized
 
 
 @app.post("/eligibility/screen", response_model=list[EligibilityResult])
 def eligibility_screen(req: EligibilityRequest) -> list[EligibilityResult]:
-    # Day 3 will load json-logic rules and evaluate against req.profile.
-    return []
+    return eligibility_agent.run(req.profile)
 
 
-@app.post("/packet/render")
-def packet_render(req: PacketRequest) -> dict[str, list]:
-    # Day 3 runs pdf-lib on the frontend; backend returns action cards only.
-    return {"action_cards": []}
+@app.post("/packet/render", response_model=list[ActionCard])
+def packet_render(req: PacketRequest) -> list[ActionCard]:
+    # PDF rendering runs client-side via pdf-lib. Backend returns
+    # action cards for each eligible program so the frontend can pair
+    # them with its rendered PDF.
+    results = eligibility_agent.run(req.profile)
+    if req.program_ids:
+        results = [r for r in results if r.program_id in req.program_ids]
+    return packet_agent.run(req.profile, results)

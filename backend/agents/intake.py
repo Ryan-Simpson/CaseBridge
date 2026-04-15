@@ -53,19 +53,29 @@ REQUIRED_FIELDS: list[tuple[str, str]] = [
 
 
 def _compute_missing(profile: dict[str, Any]) -> list[tuple[str, str]]:
-    """Compute which required fields are still unfilled. Order is significant."""
+    """Compute which required fields are still unfilled. Order is significant.
+
+    Household members has special logic: if the client lives alone
+    (`household_size == 1`), an empty members list is complete, not missing.
+    """
+    size = profile.get("household_size")
+    members = profile.get("household_members") or []
+
     missing: list[tuple[str, str]] = []
     for key, label in REQUIRED_FIELDS:
+        if key == "household_members":
+            if size is None:
+                # Wait for household_size before asking about members.
+                missing.append((key, label))
+            elif size <= 1:
+                # Client lives alone — no members to capture.
+                pass
+            elif len(members) < size - 1:
+                missing.append((key, label))
+            continue
         value = profile.get(key)
         if value in (None, "", [], {}):
             missing.append((key, label))
-            continue
-        # Special case: household_members may be partially complete.
-        if key == "household_members":
-            size = profile.get("household_size")
-            if isinstance(value, list) and size and len(value) < size - 1:
-                # We expect size - 1 members (client not listed in members).
-                missing.append((key, label))
     return missing
 
 

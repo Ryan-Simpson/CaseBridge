@@ -1,0 +1,56 @@
+{
+  "program_id": "school_meals",
+  "name": "Free & Reduced-Price School Meals",
+  "agency": "California Department of Education",
+  "description": "Free or reduced-price breakfast and lunch at California public schools.",
+  "conditions": [
+    {
+      "id": "state_ca",
+      "label": "Household is in California",
+      "check": { "==": [{ "var": "state" }, "CA"] }
+    },
+    {
+      "id": "has_student",
+      "label": "Household has at least one school-age child (ages 5 to 18)",
+      "check": {
+        "some": [
+          { "var": "household_members" },
+          {
+            "and": [
+              { ">=": [{ "var": "age" }, 5] },
+              { "<=": [{ "var": "age" }, 18] }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "income_cap",
+      "label": "Monthly income at or below 185% FPL for household size",
+      "check": {
+        "<=": [
+          { "var": "monthly_income" },
+          {
+            "+": [
+              2250,
+              { "*": [785, { "-": [{ "var": "household_size" }, 1] }] }
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "required_fields": ["state", "household_members", "household_size", "monthly_income"],
+  "required_docs": [
+    "Completed school meal application (per child)",
+    "Proof of income or CalFresh/CalWORKs case number",
+    "Student's school and grade",
+    "Signature of parent or guardian"
+  ],
+  "submission_url": "https://www.cde.ca.gov/ls/nu/sn/cep.asp",
+  "deadline": "Apply any time during the school year. New application required each year.",
+  "sources": [
+    "https://www.cde.ca.gov/ls/nu/sn/cep.asp",
+    "185% FPL same as WIC cap; California also offers universal free meals K-12 since 2022-23"
+  ]
+}

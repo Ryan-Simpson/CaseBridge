@@ -1,0 +1,52 @@
+{
+  "program_id": "wic",
+  "name": "WIC (Women, Infants, Children)",
+  "agency": "California Department of Public Health",
+  "description": "Nutrition support and food benefits for pregnant women, new mothers, infants, and children under 5.",
+  "conditions": [
+    {
+      "id": "state_ca",
+      "label": "Household is in California",
+      "check": { "==": [{ "var": "state" }, "CA"] }
+    },
+    {
+      "id": "has_young_child",
+      "label": "Household has at least one child under age 5",
+      "check": {
+        "some": [
+          { "var": "household_members" },
+          { "<": [{ "var": "age" }, 5] }
+        ]
+      }
+    },
+    {
+      "id": "income_cap",
+      "label": "Monthly income at or below 185% FPL for household size",
+      "check": {
+        "<=": [
+          { "var": "monthly_income" },
+          {
+            "+": [
+              2250,
+              { "*": [785, { "-": [{ "var": "household_size" }, 1] }] }
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "required_fields": ["state", "household_members", "household_size", "monthly_income"],
+  "required_docs": [
+    "Photo ID for parent/guardian",
+    "Proof of address",
+    "Proof of income",
+    "Child's birth certificate or ID",
+    "Medical or immunization records for child (if available)"
+  ],
+  "submission_url": "https://www.cdph.ca.gov/Programs/CFH/DWICSN/Pages/Program-Landing1.aspx",
+  "deadline": "Rolling — apply anytime while eligible.",
+  "sources": [
+    "https://www.cdph.ca.gov/Programs/CFH/DWICSN/Pages/Program-Landing1.aspx",
+    "185% FPL 2025: household of 1 = $2,250/mo, +$785 per additional person (simplified)"
+  ]
+}

@@ -1,0 +1,52 @@
+{
+  "program_id": "liheap",
+  "name": "LIHEAP (Energy Assistance)",
+  "agency": "California Department of Community Services and Development",
+  "description": "Low Income Home Energy Assistance Program — helps pay for home heating, cooling, and weatherization.",
+  "conditions": [
+    {
+      "id": "state_ca",
+      "label": "Household is in California",
+      "check": { "==": [{ "var": "state" }, "CA"] }
+    },
+    {
+      "id": "has_utility_cost",
+      "label": "Household has a monthly utility cost",
+      "check": {
+        "and": [
+          { "!=": [{ "var": "utility_cost" }, null] },
+          { ">": [{ "var": "utility_cost" }, 0] }
+        ]
+      }
+    },
+    {
+      "id": "income_cap",
+      "label": "Monthly income at or below 150% FPL for household size",
+      "check": {
+        "<=": [
+          { "var": "monthly_income" },
+          {
+            "+": [
+              1825,
+              { "*": [635, { "-": [{ "var": "household_size" }, 1] }] }
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "required_fields": ["state", "utility_cost", "monthly_income", "household_size"],
+  "required_docs": [
+    "Photo ID",
+    "Proof of income (last 30 days)",
+    "Most recent utility bill",
+    "Proof of residence",
+    "Social Security numbers for all household members"
+  ],
+  "submission_url": "https://www.csd.ca.gov/energybillassistance",
+  "deadline": "Funds are limited and awarded first-come-first-served each fiscal year. Apply early.",
+  "sources": [
+    "https://www.csd.ca.gov/energybillassistance",
+    "150% FPL 2025: household of 1 = $1,825/mo, +$635 per additional person (simplified)"
+  ]
+}

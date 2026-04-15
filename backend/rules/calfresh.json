@@ -1,0 +1,41 @@
+{
+  "program_id": "calfresh",
+  "name": "CalFresh (SNAP)",
+  "agency": "California Department of Social Services",
+  "description": "Supplemental Nutrition Assistance Program benefits for low-income households in California.",
+  "conditions": [
+    {
+      "id": "state_ca",
+      "label": "Household is in California",
+      "check": { "==": [{ "var": "state" }, "CA"] }
+    },
+    {
+      "id": "income_cap",
+      "label": "Monthly income at or below 130% FPL for household size",
+      "check": {
+        "<=": [
+          { "var": "monthly_income" },
+          {
+            "+": [
+              1580,
+              { "*": [620, { "-": [{ "var": "household_size" }, 1] }] }
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "required_fields": ["state", "monthly_income", "household_size"],
+  "required_docs": [
+    "Photo ID",
+    "Proof of income (paystubs, benefits letter)",
+    "Social Security number",
+    "Proof of California residence"
+  ],
+  "submission_url": "https://www.getcalfresh.org/",
+  "deadline": "Apply any time. Expedited service within 3 days if income < $150 and liquid assets < $100.",
+  "sources": [
+    "https://www.cdss.ca.gov/food-nutrition/calfresh",
+    "130% FPL 2025: household of 1 = $1,580/mo, +$620 per additional person (simplified)"
+  ]
+}
