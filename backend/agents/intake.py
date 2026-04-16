@@ -288,6 +288,15 @@ async def run(
       {type: 'done'}
       {type: 'error',   message: str}
     """
+    # Detect language BEFORE building chat messages so the first response
+    # is already in the right language — not English followed by a switch.
+    user_turn_count = sum(1 for t in turns if t.get("role") == "user")
+    if profile.get("preferred_language", "English") == "English" and user_turn_count == 1:
+        detected = await _detect_language(user_text)
+        if detected and detected != "English":
+            profile["preferred_language"] = detected
+            yield {"type": "language", "language": detected}
+
     messages = _build_chat_messages(turns, profile)
 
     try:
@@ -308,13 +317,6 @@ async def run(
         }
         yield {"type": "done"}
         return
-
-    # Language detection on the first user turn.
-    user_turn_count = sum(1 for t in turns if t.get("role") == "user")
-    if profile.get("preferred_language", "English") == "English" and user_turn_count == 1:
-        detected = await _detect_language(user_text)
-        if detected and detected != "English":
-            yield {"type": "language", "language": detected}
 
     # Second pass: extract a profile patch from the latest user turn.
     try:
