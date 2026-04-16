@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import { useCaseSession } from '../../context/useCaseSession'
 import { streamIntakeTurn, setSessionLanguage } from '../../lib/llm-client'
 import VoiceInput from '../../components/VoiceInput'
+import SessionTimer from '../../components/SessionTimer'
 
 const OPENING_MESSAGE = (
   "Hi, I'm here to help you capture this intake quickly. Can you tell me " +
@@ -77,6 +78,11 @@ export default function IntakeStep() {
         onProfileUpdate: (profile) => {
           updateSession({ clientProfile: profile })
         },
+        onLanguageDetected: (detected) => {
+          setLanguage(detected)
+          committedLanguageRef.current = detected
+          setSessionLanguage(caseSession.sessionId, detected).catch(() => {})
+        },
         onAgentError: (message) => {
           hadAgentError = true
           setError(`Agent: ${message}`)
@@ -115,7 +121,9 @@ export default function IntakeStep() {
             and build a profile as you go.
           </p>
         </div>
-        <div className="flex flex-col items-end gap-1">
+        <div className="flex items-center gap-3">
+          <SessionTimer />
+          <div className="flex flex-col items-end gap-1">
           <label htmlFor="intake-language" className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">
             Language
           </label>
@@ -137,6 +145,7 @@ export default function IntakeStep() {
             className="w-40 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 disabled:opacity-50"
           />
         </div>
+        </div>
       </div>
 
       {error && (
@@ -145,7 +154,7 @@ export default function IntakeStep() {
         </div>
       )}
 
-      <div className="flex-1 overflow-y-auto rounded-2xl border border-gray-200 bg-gray-50 p-4 space-y-3">
+      <div role="log" aria-live="polite" className="flex-1 overflow-y-auto rounded-2xl border border-gray-200 bg-gray-50 p-4 space-y-3">
         {messages.map((msg, i) => (
           <MessageBubble key={i} role={msg.role} text={msg.text} isStreaming={isStreaming && i === messages.length - 1 && msg.role === 'assistant'} />
         ))}
@@ -208,7 +217,11 @@ function MessageBubble({ role, text, isStreaming }) {
       >
         {text}
         {isStreaming && text.length === 0 && (
-          <span className="inline-block w-2 h-4 align-middle bg-gray-400 animate-pulse" />
+          <span className="inline-flex gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '0ms' }} />
+            <span className="w-1.5 h-1.5 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '150ms' }} />
+            <span className="w-1.5 h-1.5 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '300ms' }} />
+          </span>
         )}
         {isStreaming && text.length > 0 && (
           <span className="inline-block w-1.5 h-4 ml-0.5 align-middle bg-gray-400 animate-pulse" />

@@ -4,6 +4,7 @@ import { fillApplicationForm, renderPackets } from '../../lib/llm-client'
 import { renderPacketPdf, downloadBlob } from '../../lib/packet-pdf'
 import { PROGRAM_ICONS, PROGRAM_NAMES } from '../../lib/programs'
 import TimeSavedBanner from '../../components/TimeSavedBanner'
+import SessionTimer from '../../components/SessionTimer'
 
 export default function PacketStep() {
   const { caseSession, setActiveStep, updateAgentStatus } = useCaseSession()
@@ -13,6 +14,12 @@ export default function PacketStep() {
   const [isLoading, setIsLoading] = useState(eligibleResults.length > 0)
   const [error, setError] = useState(null)
   const [fillingProgram, setFillingProgram] = useState(null)
+  const [toast, setToast] = useState(null)
+
+  const showToast = (message) => {
+    setToast(message)
+    setTimeout(() => setToast(null), 3000)
+  }
   const renderedRef = useRef(false)
 
   useEffect(() => {
@@ -44,6 +51,7 @@ export default function PacketStep() {
         actionCard: card,
       })
       downloadBlob(blob, `${card.program_id}-${profile.client_name || 'client'}.pdf`.replace(/\s+/g, '-'))
+      showToast('PDF downloaded')
     } catch (err) {
       setError(`PDF render failed: ${err.message}`)
     }
@@ -56,6 +64,7 @@ export default function PacketStep() {
       const blob = await fillApplicationForm(profile, card.program_id)
       const clientName = (profile.client_name || 'client').replace(/\s+/g, '-')
       downloadBlob(blob, `${card.program_id}-${clientName}-application.pdf`)
+      showToast('Application filled')
     } catch (err) {
       setError(`Form fill failed: ${err.message}`)
     } finally {
@@ -101,8 +110,19 @@ export default function PacketStep() {
       )}
 
       {isLoading && (
-        <div className="rounded-2xl border border-gray-200 bg-gray-50 p-8 text-center text-sm text-gray-500">
-          Generating action cards…
+        <div className="space-y-3">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="rounded-2xl border border-gray-200 bg-white p-5 animate-pulse">
+              <div className="flex items-start gap-4">
+                <div className="w-10 h-10 rounded-lg bg-gray-200" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-4 bg-gray-200 rounded w-1/3" />
+                  <div className="h-3 bg-gray-100 rounded w-2/3" />
+                  <div className="h-3 bg-gray-100 rounded w-1/2" />
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       )}
 
@@ -120,6 +140,11 @@ export default function PacketStep() {
         </div>
       )}
 
+      {!isLoading && cards.length > 0 && (
+        <div className="mt-6 mb-2">
+          <SessionTimer final />
+        </div>
+      )}
       <TimeSavedBanner targetMinutes={167} isVisible={!isLoading && cards.length > 0} />
 
       <div className="mt-8 flex items-center justify-between">
@@ -136,6 +161,12 @@ export default function PacketStep() {
           Finish session
         </button>
       </div>
+
+      {toast && (
+        <div className="fixed bottom-6 right-6 z-50 rounded-xl bg-gray-900 text-white px-4 py-2.5 text-sm font-medium shadow-lg animate-fadeIn">
+          {toast}
+        </div>
+      )}
     </div>
   )
 }

@@ -3,6 +3,7 @@ export default function RiskOverlay({ flags, isVisible }) {
 
   return (
     <div
+      role="alert"
       className={`mt-4 transition-opacity duration-500 ${isVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
     >
       <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3">

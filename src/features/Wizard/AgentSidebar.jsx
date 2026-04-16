@@ -26,7 +26,7 @@ export default function AgentSidebar() {
       <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">
         Agents
       </h3>
-      <ul className="space-y-3">
+      <ul className="space-y-3" aria-live="polite">
         {AGENTS.map((agent) => {
           const status = caseSession.agentStatus[agent.id] || 'idle'
           const style = STATUS_STYLES[status]

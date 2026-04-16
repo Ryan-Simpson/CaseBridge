@@ -251,6 +251,30 @@ def _validated_profile(raw: dict[str, Any]) -> dict[str, Any]:
     return profile.model_dump(mode="json")
 
 
+async def _detect_language(text: str) -> str | None:
+    """Quick LLM call to detect the language of the given text."""
+    try:
+        response = await _client().chat(
+            model=MODEL,
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "What language is this text written in? Return ONLY the "
+                        "language name in English (e.g. 'Spanish', 'Vietnamese', "
+                        "'English'). One word."
+                    ),
+                },
+                {"role": "user", "content": text},
+            ],
+            options={"temperature": 0.0, "num_predict": 10},
+        )
+        detected = response["message"]["content"].strip().strip("'\".,")
+        return detected if detected else None
+    except Exception:
+        return None
+
+
 async def run(
     turns: list[dict[str, str]],
     profile: dict[str, Any],
@@ -284,6 +308,13 @@ async def run(
         }
         yield {"type": "done"}
         return
+
+    # Language detection on the first user turn.
+    user_turn_count = sum(1 for t in turns if t.get("role") == "user")
+    if profile.get("preferred_language", "English") == "English" and user_turn_count == 1:
+        detected = await _detect_language(user_text)
+        if detected and detected != "English":
+            yield {"type": "language", "language": detected}
 
     # Second pass: extract a profile patch from the latest user turn.
     try:

@@ -27,6 +27,7 @@ function App() {
   const handleStartWizard = async () => {
     setWizardError(null)
     clearSession()
+    updateSession({ sessionStartTime: Date.now() })
     setActiveStep('intake')
     try {
       const { session_id } = await startSession()
@@ -42,7 +43,7 @@ function App() {
 
   return (
     <div className="min-h-screen flex flex-col bg-white">
-      <Header activeStep={activeStep} onHome={handleGoHome} />
+      <Header activeStep={activeStep} onHome={handleGoHome} onStepClick={setActiveStep} />
       <main className="flex-1 flex">
         <AgentSidebar />
         <div className="flex-1 min-w-0">
@@ -56,7 +57,11 @@ function App() {
           {activeStep === 'dashboard' && (
             <Dashboard onStartWizard={handleStartWizard} />
           )}
-          {StepComponent && <StepComponent />}
+          {StepComponent && (
+            <div key={activeStep} className="animate-fadeIn">
+              <StepComponent />
+            </div>
+          )}
         </div>
       </main>
       <Footer />

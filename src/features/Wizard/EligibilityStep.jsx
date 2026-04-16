@@ -3,6 +3,14 @@ import { useCaseSession } from '../../context/useCaseSession'
 import { screenEligibility } from '../../lib/llm-client'
 import { PROGRAM_ICONS, PROGRAM_NAMES } from '../../lib/programs'
 
+const PROGRAM_VALUES = {
+  calfresh: 420,
+  erap: 1450,
+  wic: 120,
+  liheap: 75,
+  school_meals: 150,
+}
+
 export default function EligibilityStep() {
   const { caseSession, updateSession, setActiveStep, updateAgentStatus } = useCaseSession()
   const profile = caseSession.clientProfile
@@ -53,6 +61,9 @@ export default function EligibilityStep() {
 
   const results = caseSession.eligibility || []
   const eligibleCount = results.filter((r) => r.eligible).length
+  const estimatedMonthly = results
+    .filter((r) => r.eligible)
+    .reduce((sum, r) => sum + (PROGRAM_VALUES[r.program_id] || 0), 0)
 
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8">
@@ -64,8 +75,16 @@ export default function EligibilityStep() {
           </p>
         </div>
         {!isLoading && results.length > 0 && (
-          <div className="rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-2 text-sm font-semibold text-emerald-700">
-            {eligibleCount} of {results.length} eligible
+          <div className="text-right">
+            <div className="rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-2 text-sm font-semibold text-emerald-700">
+              {eligibleCount} of {results.length} eligible
+            </div>
+            {estimatedMonthly > 0 && (
+              <div className="mt-1.5 text-lg font-bold text-emerald-600">
+                ~${estimatedMonthly.toLocaleString()}/mo
+                <span className="block text-[11px] font-normal text-emerald-500">in potential benefits</span>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -77,8 +96,19 @@ export default function EligibilityStep() {
       )}
 
       {isLoading && (
-        <div className="rounded-2xl border border-gray-200 bg-gray-50 p-8 text-center text-sm text-gray-500">
-          Evaluating rules…
+        <div className="space-y-3">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="rounded-2xl border border-gray-200 bg-white p-5 animate-pulse">
+              <div className="flex items-start gap-4">
+                <div className="w-10 h-10 rounded-lg bg-gray-200" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-4 bg-gray-200 rounded w-1/3" />
+                  <div className="h-3 bg-gray-100 rounded w-2/3" />
+                  <div className="h-3 bg-gray-100 rounded w-1/2" />
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       )}
 

@@ -27,6 +27,7 @@ export async function streamIntakeTurn({
   onProfileUpdate,
   onAgentError,
   onDone,
+  onLanguageDetected,
 }) {
   const response = await fetch(`${BACKEND_URL}/intake/turn`, {
     method: 'POST',
@@ -56,6 +57,7 @@ export async function streamIntakeTurn({
         const payload = JSON.parse(dataLine.slice(6))
         if (payload.type === 'delta') onDelta?.(payload.text)
         else if (payload.type === 'profile') onProfileUpdate?.(payload.profile)
+        else if (payload.type === 'language') onLanguageDetected?.(payload.language)
         else if (payload.type === 'error') onAgentError?.(payload.message)
         else if (payload.type === 'done') onDone?.(payload)
       } catch (err) {

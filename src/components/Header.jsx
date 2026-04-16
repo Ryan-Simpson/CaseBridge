@@ -8,7 +8,7 @@ const STEP_LABELS = {
 
 const STEP_ORDER = ['intake', 'profile', 'eligibility', 'packet']
 
-export default function Header({ activeStep, onHome }) {
+export default function Header({ activeStep, onHome, onStepClick }) {
   const inWizard = activeStep !== 'dashboard'
   const currentIndex = STEP_ORDER.indexOf(activeStep)
 
@@ -37,19 +37,34 @@ export default function Header({ activeStep, onHome }) {
               {STEP_ORDER.map((stepId, i) => {
                 const isActive = stepId === activeStep
                 const isDone = i < currentIndex
-                return (
-                  <div
-                    key={stepId}
-                    className={`flex items-center gap-1.5 px-2 sm:px-3 py-1 rounded-full text-xs font-medium ${
-                      isActive
-                        ? 'bg-brand-600 text-white'
-                        : isDone
-                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                          : 'bg-gray-50 text-gray-400 border border-gray-200'
-                    }`}
-                  >
+                const baseClasses = `flex items-center gap-1.5 px-2 sm:px-3 py-1 rounded-full text-xs font-medium ${
+                  isActive
+                    ? 'bg-brand-600 text-white'
+                    : isDone
+                      ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 cursor-pointer'
+                      : 'bg-gray-50 text-gray-400 border border-gray-200'
+                }`
+                const content = (
+                  <>
                     <span className="hidden sm:inline">{STEP_LABELS[stepId]}</span>
                     <span className="sm:hidden">{i + 1}</span>
+                  </>
+                )
+                return isDone ? (
+                  <button
+                    key={stepId}
+                    onClick={() => onStepClick?.(stepId)}
+                    className={baseClasses}
+                  >
+                    {content}
+                  </button>
+                ) : (
+                  <div
+                    key={stepId}
+                    className={baseClasses}
+                    {...(isActive ? { 'aria-current': 'step' } : {})}
+                  >
+                    {content}
                   </div>
                 )
               })}

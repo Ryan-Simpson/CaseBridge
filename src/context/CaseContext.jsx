@@ -32,6 +32,9 @@ const INITIAL_STATE = {
   // Packet Agent output — { programId, pdfUrl, actionCard }[]
   packets: [],
 
+  // Session timer
+  sessionStartTime: null,
+
   // Dashboard → wizard preload
   preloadedTranscript: null,
   preloadedClientName: null,
