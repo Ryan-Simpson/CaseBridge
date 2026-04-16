@@ -1,24 +1,25 @@
 #!/usr/bin/env bash
-# Start the Cloudflare Tunnel for casebridge.live
-# Requires: ~/cloudflared binary + ~/.cloudflared/config.yml
+# SSH reverse tunnel to VPS for casebridge.live
 #
-# This tunnels:
-#   casebridge.live     → localhost:5173 (frontend)
-#   api.casebridge.live → localhost:8000 (backend)
+# Routes:
+#   casebridge.live     → VPS nginx → SSH tunnel → localhost:5173 (frontend)
+#   api.casebridge.live → VPS nginx → SSH tunnel → localhost:8000 (backend)
 #
-# Make sure both servers are running first (./scripts/dev.sh)
+# Make sure both local servers are running first (./scripts/dev.sh)
+# Requires: sshpass (apt install sshpass)
 
 set -euo pipefail
 
-if [ ! -f "$HOME/cloudflared" ]; then
-    echo "cloudflared not found. Install with:"
-    echo "  curl -sL https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64 -o ~/cloudflared && chmod +x ~/cloudflared"
-    exit 1
-fi
+VPS_HOST="${CASEBRIDGE_VPS_HOST:-207.246.97.4}"
+VPS_USER="${CASEBRIDGE_VPS_USER:-root}"
 
-echo "Starting Cloudflare Tunnel → casebridge.live"
-echo "  casebridge.live     → http://127.0.0.1:5173"
-echo "  api.casebridge.live → http://127.0.0.1:8000"
+echo "Starting SSH reverse tunnel → casebridge.live"
+echo "  casebridge.live     → localhost:5173"
+echo "  api.casebridge.live → localhost:8000"
 echo ""
+echo "Press Ctrl+C to stop."
 
-~/cloudflared tunnel run
+ssh -o StrictHostKeyChecking=no -N \
+  -R 5173:127.0.0.1:5173 \
+  -R 8000:127.0.0.1:8000 \
+  "${VPS_USER}@${VPS_HOST}"
