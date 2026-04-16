@@ -1,4 +1,8 @@
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000'
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || (
+  typeof window !== 'undefined' && window.location.hostname === 'casebridge.live'
+    ? 'https://api.casebridge.live'
+    : 'http://localhost:8000'
+)
 
 async function post(path, body) {
   const response = await fetch(`${BACKEND_URL}${path}`, {
