@@ -29,7 +29,7 @@ export default function RiskOverlay({ flags, isVisible }) {
                   {flag.severity === 'red' ? 'High' : 'Medium'}
                 </span>
               </div>
-              <p className="text-xs text-gray-500 mt-0.5">{flag.recommendation}</p>
+              <p className="text-xs text-gray-500 mt-0.5">{flag.reason}</p>
             </div>
           </div>
         ))}

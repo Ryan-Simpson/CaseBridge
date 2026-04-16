@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useCaseSession } from '../../context/useCaseSession'
 import { finalizeProfile } from '../../lib/llm-client'
+import RiskOverlay from '../../components/RiskOverlay'
 
 export default function ProfileReviewStep() {
   const { caseSession, updateSession, setActiveStep, updateAgentStatus } = useCaseSession()
@@ -21,11 +22,13 @@ export default function ProfileReviewStep() {
     Promise.resolve()
       .then(() => {
         updateAgentStatus('profile', 'running')
+        updateAgentStatus('risk', 'running')
         return finalizeProfile(caseSession.sessionId)
       })
       .then((normalized) => {
         updateSession({ clientProfile: normalized })
         updateAgentStatus('profile', 'done')
+        updateAgentStatus('risk', 'done')
       })
       .catch((err) => {
         setNormalizeError(`Normalization failed: ${err.message}`)
@@ -146,6 +149,11 @@ export default function ProfileReviewStep() {
           )}
         </Section>
       </div>
+
+      <RiskOverlay
+        flags={profile.risk_flags}
+        isVisible={!isNormalizing && profile.risk_flags?.length > 0}
+      />
 
       <div className="mt-6 flex items-center justify-between">
         <button

@@ -3,6 +3,7 @@ import { useCaseSession } from '../../context/useCaseSession'
 import { fillApplicationForm, renderPackets } from '../../lib/llm-client'
 import { renderPacketPdf, downloadBlob } from '../../lib/packet-pdf'
 import { PROGRAM_ICONS, PROGRAM_NAMES } from '../../lib/programs'
+import TimeSavedBanner from '../../components/TimeSavedBanner'
 
 export default function PacketStep() {
   const { caseSession, setActiveStep, updateAgentStatus } = useCaseSession()
@@ -118,6 +119,8 @@ export default function PacketStep() {
           ))}
         </div>
       )}
+
+      <TimeSavedBanner targetMinutes={167} isVisible={!isLoading && cards.length > 0} />
 
       <div className="mt-8 flex items-center justify-between">
         <button
