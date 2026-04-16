@@ -213,7 +213,52 @@
 \end{center}
 \end{frame}
 
-% ======================== 6: IMPACT ========================
+% ======================== 6: PRIVACY BY ARCHITECTURE ========================
+\begin{frame}{Privacy by Architecture}
+\vspace{6pt}
+\begin{center}
+\begin{tikzpicture}
+  % Main box
+  \draw[rounded corners=8pt, thick, brand] (0,0) rectangle (10.5,3.8);
+  \node[anchor=north west, font=\footnotesize\bfseries, color=brand] at (0.2,3.6) {YOUR MACHINE};
+
+  % Components
+  \node[fill=lightgray, rounded corners=3pt, minimum width=2cm, minimum height=0.7cm, font=\footnotesize] (b) at (1.8, 2.4) {What you see};
+  \node[fill=lightgray, rounded corners=3pt, minimum width=2.2cm, minimum height=0.7cm, font=\footnotesize] (a) at (5.3, 2.4) {CaseBridge};
+  \node[fill=brand!15, rounded corners=3pt, minimum width=2.2cm, minimum height=0.7cm, font=\footnotesize\bfseries, text=brand] (g) at (8.8, 2.4) {Gemma 4};
+
+  \draw[->, thick] (b) -- (a);
+  \draw[->, thick] (a) -- (g);
+
+  % Sub-labels
+  \node[font=\tiny, color=muted, text width=2cm, align=center] at (1.8, 1.2) {Chat wizard\\140+ languages};
+  \node[font=\tiny, color=muted, text width=2cm, align=center] at (5.3, 1.2) {6 AI assistants\\eligibility rules\\PDF generation};
+  \node[font=\tiny, color=muted, text width=2cm, align=center] at (8.8, 1.2) {Local GPU\\by Google\\open-source};
+
+  % Red block outside
+  \node[fill=redtext!10, rounded corners=4pt, text=redtext, font=\footnotesize\bfseries, text width=2.2cm, align=center, inner sep=6pt] at (12.8, 2.4) {No cloud AI\\No API keys\\No telemetry};
+\end{tikzpicture}
+\end{center}
+\vspace{6pt}
+\begin{columns}[T]
+  \begin{column}{0.46\textwidth}
+    {\footnotesize
+    \chmark All data stays on your computer\\
+    \chmark Nothing saved --- destroyed on restart\\
+    \chmark Browser blocked from calling external AI\\
+    \chmark Zero cloud AI code in the entire project}
+  \end{column}
+  \begin{column}{0.46\textwidth}
+    {\footnotesize
+    \chmark Works fully offline (verified)\\
+    \chmark HIPAA-ready architecture by default\\
+    \chmark Eligibility rules are consistent \& auditable\\
+    \chmark Caseworker reviews everything before submission}
+  \end{column}
+\end{columns}
+\end{frame}
+
+% ======================== 7: IMPACT ========================
 \begin{frame}{Impact}
 \vspace{8pt}
 \begin{center}
