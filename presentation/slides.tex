@@ -255,50 +255,91 @@
 \end{center}
 \end{frame}
 
-% ======================== SLIDE 7: MARKET + ROADMAP ========================
-% Criterion 4: Venture & Market Readiness (10 pts) — THE MISSING PIECE
-\begin{frame}{Market \& Roadmap}
+% ======================== SLIDE 7: COMPETITIVE LANDSCAPE ========================
+% Criterion 4: Venture & Market Readiness (10 pts)
+\begin{frame}{Why CaseBridge Wins}
+\vspace{4pt}
+\begin{center}
+  {\small\color{muted} Others do one thing. \textbf{CaseBridge does all three --- and runs locally.}}
+\end{center}
+\vspace{6pt}
+\begin{center}
+{\footnotesize
+\begin{tabular}{l c c c c}
+\toprule
+& \textbf{AI Interview} & \textbf{Eligibility} & \textbf{Filled PDFs} & \textbf{Runs Locally} \\
+\midrule
+mRelief (OpenAI)           & {\color{accent}\checkmark} {\tiny SNAP only} & {\color{accent}\checkmark} {\tiny SNAP only} & {\color{redtext}---} & {\color{redtext}---} \\[2pt]
+Single Stop                & {\color{redtext}---}        & {\color{accent}\checkmark}                    & {\color{redtext}---} & {\color{redtext}---} \\[2pt]
+findhelp                   & {\color{redtext}---}        & {\color{redtext}---}                          & {\color{redtext}---} & {\color{redtext}---} \\[2pt]
+Eleos / Freed AI           & {\color{accent}\checkmark} {\tiny clinical notes} & {\color{redtext}---}           & {\color{redtext}---} & {\color{redtext}---} \\[2pt]
+Apricot / CaseWorthy       & {\color{redtext}---}        & {\color{redtext}---}                          & {\color{redtext}---} & {\color{redtext}---} \\[2pt]
+\midrule
+\textbf{CaseBridge}        & {\color{accent}\checkmark} {\tiny \textbf{5 programs}} & {\color{accent}\checkmark} {\tiny \textbf{5 programs}} & {\color{accent}\checkmark} & {\color{accent}\checkmark} \\
+\bottomrule
+\end{tabular}}
+\end{center}
+\vspace{8pt}
+\begin{columns}[T]
+  \begin{column}{0.46\textwidth}
+    {\footnotesize
+    \textbf{Why now:} Google released Gemma 4 in April 2026 --- the first open model fast enough for real-time local conversation. Before this, local AI was too slow.}
+  \end{column}
+  \begin{column}{0.46\textwidth}
+    {\footnotesize
+    \textbf{Our moat:} No competitor runs AI offline. The state-specific rules engine is hard to replicate. First-mover advantage in local-AI social work.}
+  \end{column}
+\end{columns}
+\end{frame}
+
+% ======================== SLIDE 8: MARKET + CLOSE ========================
+% Criterion 4 continued: Would real customers adopt and pay?
+\begin{frame}{Market \& Next Steps}
 \vspace{4pt}
 \begin{columns}[T]
   \begin{column}{0.48\textwidth}
-    {\small\textbf{Who needs this:}}\\[4pt]
+    {\small\textbf{The opportunity:}}\\[4pt]
     {\footnotesize
-    \textbf{700,000} social workers in the US\\
-    \textbf{3,100} county human services offices\\
-    \textbf{25,000+} nonprofit benefits navigators\\[6pt]
-    \textbf{How they'd adopt:}\\[3pt]
-    \chmark Free 3-month pilot (prove ROI)\\
-    \chmark Per-seat license: \$50/caseworker/month\\
-    \chmark Saves \$375/week in labor per seat\\
-    \chmark \textbf{7.5x return} on investment\\[6pt]
-    \textbf{Why now:}\\[3pt]
-    Gemma 4 (April 2026) made local AI\\
-    fast enough for real-time conversation.\\
-    Before this, local models were too slow.}
+    {\color{brand}\textbf{700,000}} social workers in the US\\
+    {\color{brand}\textbf{3,100}} county human services offices\\
+    {\color{brand}\textbf{25,000+}} nonprofit benefits navigators}
+    \vspace{8pt}
+
+    {\small\textbf{Business model:}}\\[4pt]
+    {\footnotesize
+    \begin{tabular}{@{}ll@{}}
+      \textbf{Price}   & \$50 / caseworker / month \\
+      \textbf{Savings}  & \$375 / week in labor saved \\
+      \textbf{ROI}      & \textbf{7.5x return} for the agency \\
+      \textbf{Adopt}    & Free 3-month pilot to prove ROI \\
+    \end{tabular}}
+    \vspace{8pt}
+
+    {\footnotesize\color{muted} Benefits Data Trust + Nava PBC are spending \$3M in Gates/Google.org funding to \textit{explore} whether AI can help navigators. CaseBridge already does it.}
   \end{column}
   \begin{column}{0.48\textwidth}
     {\small\textbf{Deployment roadmap:}}\\[4pt]
     {\footnotesize
     \begin{description}\setlength{\itemsep}{3pt}
       \item[\color{brand}Phase 1] Pilot: 1 LA County DSS office\\
-        {\color{muted}5 caseworkers, 3 months, measure time saved}
+        {\color{muted}5 caseworkers, 3 months}
       \item[\color{brand}Phase 2] Scale: 5 California counties\\
-        {\color{muted}Add county-specific program rules}
+        {\color{muted}County-specific program rules}
       \item[\color{brand}Phase 3] CDSS state-wide partnership\\
-        {\color{muted}Compliance certification, BAA infrastructure}
+        {\color{muted}Compliance certification}
       \item[\color{brand}Phase 4] Open-source the rules engine\\
         {\color{muted}Other states bring their own rules}
     \end{description}}
-    \vspace{6pt}
-    {\small\textbf{Competitive advantage:}}\\[3pt]
-    {\footnotesize No competitor runs AI fully offline.\\
-    The rules engine is state-specific IP.\\
-    First-mover in local-AI social work tools.}
   \end{column}
 \end{columns}
-\vspace{4pt}
+\vspace{6pt}
 \begin{center}
-  {\color{brand}\normalsize\bfseries casebridge.live}\quad{\color{muted}\footnotesize github.com/Ryan-Simpson/CaseBridge}
+  \begin{tikzpicture}
+    \node[fill=brand!8,rounded corners=6pt,inner sep=10pt,text width=0.8\textwidth,align=center] {
+      {\color{brand}\large\bfseries casebridge.live}\\[3pt]
+      {\color{muted}\footnotesize github.com/Ryan-Simpson/CaseBridge \quad $\cdot$ \quad Team Lebroncos}
+    };
+  \end{tikzpicture}
 \end{center}
 \end{frame}
 
