@@ -6,7 +6,6 @@
 \setbeamertemplate{footline}{}
 \setbeamertemplate{frametitle}[default][left]
 
-% Colors
 \definecolor{brand}{RGB}{28,90,168}
 \definecolor{accent}{RGB}{16,185,129}
 \definecolor{ink}{RGB}{26,26,26}
@@ -36,11 +35,9 @@
 }
 \newcommand{\chmark}{{\color{accent!80!black}\checkmark}\;}
 
-% -----------------------------------------------------------
 \begin{document}
 
-% ======================== SLIDE 1: TITLE ========================
-% Criterion 5: Storytelling — hook them in 10 seconds
+% ======================== 1: TITLE ========================
 \begin{frame}
 \vfill
 \begin{center}
@@ -48,13 +45,12 @@
   {\color{ink}\large One interview. Five applications. Zero data leaks.}\\[24pt]
   \pill{CPP AI Hackathon 2026}\quad\pill{Category 5}\quad\pill{SDGs 1 $\cdot$ 3 $\cdot$ 10 $\cdot$ 11}\\[18pt]
   {\color{brand}\normalsize\bfseries casebridge.live}\\[8pt]
-  {\color{muted}\small Team Lebroncos}
+  {\color{muted}\small Parsa Ghasemi \quad Ryan Simpson \quad Aspen Knox \quad Changwe Musonda}
 \end{center}
 \vfill
 \end{frame}
 
-% ======================== SLIDE 2: PROBLEM ========================
-% Criterion 1: Innovation & Problem Framing (10 pts)
+% ======================== 2: PROBLEM ========================
 \begin{frame}{The Problem}
 \vspace{4pt}
 \begin{center}
@@ -84,8 +80,7 @@
 \end{columns}
 \end{frame}
 
-% ======================== SLIDE 3: SOLUTION ========================
-% Criterion 1 continued: Original AI solution
+% ======================== 3: SOLUTION ========================
 \begin{frame}{What CaseBridge Does}
 \vspace{6pt}
 \begin{center}
@@ -105,29 +100,28 @@
     \centering
     {\color{brand}\Large 1}\\[2pt]
     {\small\textbf{Interview}}\\[4pt]
-    {\color{muted}\footnotesize The caseworker describes the client's situation in plain language. CaseBridge asks smart follow-ups to capture every required field.}
+    {\color{muted}\footnotesize Caseworker describes the client's situation. AI asks smart follow-ups --- one field at a time.}
   \end{column}
   \begin{column}{0.30\textwidth}
     \centering
     {\color{brand}\Large 2}\\[2pt]
     {\small\textbf{Screen}}\\[4pt]
-    {\color{muted}\footnotesize Checks eligibility for 5 California benefit programs using consistent rules --- same input always gives the same answer.}
+    {\color{muted}\footnotesize Checks eligibility using consistent rules. Same input always gives the same answer.}
   \end{column}
   \begin{column}{0.30\textwidth}
     \centering
     {\color{brand}\Large 3}\\[2pt]
     {\small\textbf{Generate}}\\[4pt]
-    {\color{muted}\footnotesize Produces pre-filled application PDFs for every program the client qualifies for. Ready to print and submit.}
+    {\color{muted}\footnotesize Produces filled application PDFs for every qualifying program. Print and submit.}
   \end{column}
 \end{columns}
 \vspace{8pt}
 \begin{center}
-  {\footnotesize\color{muted} Works in \textbf{140+ languages} $\cdot$ Runs \textbf{entirely on your own computer} $\cdot$ \textbf{Unlimited programs} (5 in today's demo)}
+  {\footnotesize\color{muted} \textbf{140+ languages} $\cdot$ Runs \textbf{entirely on your computer} $\cdot$ \textbf{Unlimited programs} (5 in demo)}
 \end{center}
 \end{frame}
 
-% ======================== SLIDE 4: LIVE DEMO ========================
-% Criterion 3: Technical Feasibility (10 pts) — show it works
+% ======================== 4: LIVE DEMO ========================
 \begin{frame}{Live Demo}
 \vspace{6pt}
 \begin{center}
@@ -147,76 +141,79 @@
 \end{tikzpicture}
 \end{center}
 \vspace{10pt}
-\begin{center}
-  {\footnotesize\color{muted}\textbf{What to watch for:}}
-\end{center}
-\vspace{4pt}
 \begin{columns}[T]
   \begin{column}{0.30\textwidth}
     \centering
-    {\small\textbf{AI asks the right questions}}\\[2pt]
+    {\small\textbf{AI asks the right questions}}\\[3pt]
     {\color{muted}\scriptsize Walks through 15 fields\\one at a time, naturally}
   \end{column}
   \begin{column}{0.30\textwidth}
     \centering
-    {\small\textbf{Eligibility with reasons}}\\[2pt]
+    {\small\textbf{Eligibility with reasons}}\\[3pt]
     {\color{muted}\scriptsize Clear pass/fail for each\\program, not a black box}
   \end{column}
   \begin{column}{0.30\textwidth}
     \centering
-    {\small\textbf{Real filled PDFs}}\\[2pt]
+    {\small\textbf{Real filled PDFs}}\\[3pt]
     {\color{muted}\scriptsize Government-style forms\\with client data populated}
   \end{column}
 \end{columns}
 \end{frame}
 
-% ======================== SLIDE 5: GEMMA 4 + PRIVACY ========================
-% Criterion 3 continued: Credible technology
+% ======================== 5: GEMMA 4 (REWRITTEN — scannable) ========================
 \begin{frame}{Powered by Google's Gemma 4}
-\vspace{4pt}
+\vspace{6pt}
+\begin{center}
+  {\color{muted}\footnotesize Google's latest open-source AI model $\cdot$ Released April 2026 $\cdot$ Apache 2.0 license}
+\end{center}
+\vspace{10pt}
 \begin{columns}[T]
-  \begin{column}{0.48\textwidth}
-    {\small\textbf{What is Gemma 4?}}\\[6pt]
-    {\footnotesize
-    Google's latest open-source AI model, released April 2026.\\[4pt]
-    \chmark Runs on a single GPU --- no cloud needed\\
-    \chmark Speaks 140+ languages natively\\
-    \chmark Apache 2.0 license --- free, no vendor lock-in\\
-    \chmark Powers the interview, extraction, and risk detection}
-    \vspace{10pt}
-
-    {\small\textbf{What this means for social workers:}}\\[4pt]
-    {\footnotesize The AI that interviews clients and fills forms runs on the computer in front of you.\\[4pt]
-    \textbf{No data goes to Google, OpenAI, or anyone else. Ever.}}
-  \end{column}
-  \begin{column}{0.48\textwidth}
-    \begin{center}
+  \begin{column}{0.30\textwidth}
+    \centering
     \begin{tikzpicture}
-      \draw[rounded corners=6pt, thick, brand] (0,0) rectangle (5.5,3.8);
-      \node[anchor=north west, font=\tiny\bfseries, color=brand] at (0.15,3.6) {YOUR MACHINE};
-      \node[fill=lightgray, rounded corners=3pt, minimum width=1.6cm, minimum height=0.6cm, font=\tiny] (b) at (1.2, 2.4) {What you see};
-      \node[fill=lightgray, rounded corners=3pt, minimum width=1.6cm, minimum height=0.6cm, font=\tiny] (a) at (2.8, 2.4) {CaseBridge};
-      \node[fill=brand!15, rounded corners=3pt, minimum width=1.6cm, minimum height=0.6cm, font=\tiny\bfseries, text=brand] (g) at (4.4, 2.4) {Gemma 4};
-      \draw[->, thick] (b) -- (a);
-      \draw[->, thick] (a) -- (g);
-      \node[font=\tiny, color=muted, text width=1.5cm, align=center] at (1.2, 1.2) {Chat\\wizard};
-      \node[font=\tiny, color=muted, text width=1.5cm, align=center] at (2.8, 1.2) {Eligibility\\PDF fill};
-      \node[font=\tiny, color=muted, text width=1.5cm, align=center] at (4.4, 1.2) {Local GPU\\by Google};
+      \node[fill=brand!8,rounded corners=6pt,minimum width=3.8cm,minimum height=2.2cm,align=center] {
+        {\color{brand}\Large\bfseries Local}\\[4pt]
+        {\footnotesize Runs on a single GPU}\\
+        {\footnotesize No cloud. No servers.}\\
+        {\footnotesize Your machine only.}
+      };
     \end{tikzpicture}
-    \end{center}
-    \vspace{4pt}
-    \begin{center}
-    {\footnotesize
-    \chmark Data in memory only --- nothing saved\\
-    \chmark Works fully offline (verified)\\
-    \chmark HIPAA-ready architecture}
-    \end{center}
+  \end{column}
+  \begin{column}{0.30\textwidth}
+    \centering
+    \begin{tikzpicture}
+      \node[fill=accent!8,rounded corners=6pt,minimum width=3.8cm,minimum height=2.2cm,align=center] {
+        {\color{accent!80!black}\Large\bfseries 140+}\\[4pt]
+        {\footnotesize Languages supported}\\
+        {\footnotesize Auto-detected from}\\
+        {\footnotesize the first message}
+      };
+    \end{tikzpicture}
+  \end{column}
+  \begin{column}{0.30\textwidth}
+    \centering
+    \begin{tikzpicture}
+      \node[fill=brand!8,rounded corners=6pt,minimum width=3.8cm,minimum height=2.2cm,align=center] {
+        {\color{brand}\Large\bfseries Free}\\[4pt]
+        {\footnotesize Open-source license}\\
+        {\footnotesize No API costs}\\
+        {\footnotesize No vendor lock-in}
+      };
+    \end{tikzpicture}
   \end{column}
 \end{columns}
+\vspace{12pt}
+\begin{center}
+  \begin{tikzpicture}
+    \node[fill=lightgray,rounded corners=6pt,inner sep=10pt,text width=0.82\textwidth,align=center] {
+      {\normalsize\textbf{No data goes to Google, OpenAI, or anyone else. Ever.}}\\[4pt]
+      {\footnotesize\color{muted} \chmark Data in memory only \quad \chmark Works fully offline (verified) \quad \chmark HIPAA-ready architecture}
+    };
+  \end{tikzpicture}
+\end{center}
 \end{frame}
 
-% ======================== SLIDE 6: IMPACT ========================
-% Criterion 2: Impact & Relevance (10 pts)
+% ======================== 6: IMPACT ========================
 \begin{frame}{Impact}
 \vspace{8pt}
 \begin{center}
@@ -248,21 +245,20 @@
 \end{center}
 \vspace{8pt}
 \begin{center}
-  \pill{SDG 1} {\footnotesize Poverty --- benefits access}\;\;
-  \pill{SDG 3} {\footnotesize Health --- WIC enrollment}\;\;
-  \pill{SDG 10} {\footnotesize Equality --- 140+ languages}\;\;
-  \pill{SDG 11} {\footnotesize Communities --- local resources}
+  \pill{SDG 1} {\footnotesize Poverty}\;\;
+  \pill{SDG 3} {\footnotesize Health}\;\;
+  \pill{SDG 10} {\footnotesize Equality}\;\;
+  \pill{SDG 11} {\footnotesize Communities}
 \end{center}
 \end{frame}
 
-% ======================== SLIDE 7: COMPETITIVE LANDSCAPE ========================
-% Criterion 4: Venture & Market Readiness (10 pts)
+% ======================== 7: COMPETITIVE (FIXED — no overflow) ========================
 \begin{frame}{Why CaseBridge Wins}
-\vspace{4pt}
+\vspace{2pt}
 \begin{center}
   {\small\color{muted} Others do one thing. \textbf{CaseBridge does all three --- and runs locally.}}
 \end{center}
-\vspace{6pt}
+\vspace{4pt}
 \begin{center}
 {\footnotesize
 \begin{tabular}{l c c c c}
@@ -282,26 +278,19 @@ Apricot / CaseWorthy       & {\color{redtext}---}        & {\color{redtext}---} 
 \vspace{4pt}
 \begin{center}
   \begin{tikzpicture}
-    \node[fill=brand!8,rounded corners=4pt,inner sep=6pt,text width=0.82\textwidth,align=center] {
-      {\footnotesize\color{brand}\textbf{Expandable by design:} Today's demo covers 5 California programs. Adding a new program is one rule file --- no code change. The architecture supports \textbf{any state, any number of programs.}}
+    \node[fill=brand!8,rounded corners=4pt,inner sep=5pt,text width=0.82\textwidth,align=center] {
+      {\footnotesize\color{brand}\textbf{Expandable:} 5 programs in today's demo. Adding a new program = one rule file, no code change. \textbf{Any state, any number of programs.}}
     };
   \end{tikzpicture}
 \end{center}
 \vspace{2pt}
-\begin{columns}[T]
-  \begin{column}{0.46\textwidth}
-    {\footnotesize
-    \textbf{Why now:} Google released Gemma 4 in April 2026 --- the first open model fast enough for real-time local conversation.}
-  \end{column}
-  \begin{column}{0.46\textwidth}
-    {\footnotesize
-    \textbf{Our moat:} No competitor runs AI offline. The rules engine is state-specific IP. First-mover in local-AI social work.}
-  \end{column}
-\end{columns}
+\begin{center}
+  {\footnotesize\textbf{Why now:} Gemma 4 (April 2026) --- first local model fast enough for real-time conversation.}\\[2pt]
+  {\footnotesize\textbf{Our moat:} Only offline AI in this space. State-specific rules are hard to replicate.}
+\end{center}
 \end{frame}
 
-% ======================== SLIDE 8: MARKET + CLOSE ========================
-% Criterion 4 continued: Would real customers adopt and pay?
+% ======================== 8: MARKET ========================
 \begin{frame}{Market \& Next Steps}
 \vspace{4pt}
 \begin{columns}[T]
@@ -323,7 +312,7 @@ Apricot / CaseWorthy       & {\color{redtext}---}        & {\color{redtext}---} 
     \end{tabular}}
     \vspace{8pt}
 
-    {\footnotesize\color{muted} Benefits Data Trust + Nava PBC are spending \$3M in Gates/Google.org funding to \textit{explore} whether AI can help navigators. CaseBridge already does it.}
+    {\footnotesize\color{muted} Benefits Data Trust + Nava PBC are spending \$3M in Gates/Google.org funding to \textit{explore} AI for navigators. CaseBridge already does it.}
   \end{column}
   \begin{column}{0.48\textwidth}
     {\small\textbf{Deployment roadmap:}}\\[4pt]
@@ -345,7 +334,7 @@ Apricot / CaseWorthy       & {\color{redtext}---}        & {\color{redtext}---} 
   \begin{tikzpicture}
     \node[fill=brand!8,rounded corners=6pt,inner sep=10pt,text width=0.8\textwidth,align=center] {
       {\color{brand}\large\bfseries casebridge.live}\\[3pt]
-      {\color{muted}\footnotesize github.com/Ryan-Simpson/CaseBridge \quad $\cdot$ \quad Team Lebroncos}
+      {\color{muted}\footnotesize github.com/Ryan-Simpson/CaseBridge \quad $\cdot$ \quad Parsa Ghasemi \quad Ryan Simpson \quad Aspen Knox \quad Changwe Musonda}
     };
   \end{tikzpicture}
 \end{center}
