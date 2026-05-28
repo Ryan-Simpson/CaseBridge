@@ -1,10 +1,10 @@
 # CaseBridge
 
-**CPP AI Hackathon 2026 · Category 5 · SDGs 1, 3, 10, 11**
+**CPP AI Hackathon 2026 · Category 5 · SDGs 1, 3, 10, 11 - Resulting in 3rd Place**
 
 ## Problem
 
-Social workers and caseworkers spend **60–70% of their time** on administrative tasks — writing case notes, searching for resources, and filling out referral forms. This leaves less time for the people who need them most.
+Social workers and caseworkers spend **60–70% of their time** on administrative tasks - writing case notes, searching for resources, and filling out referral forms. This leaves less time for the people who need them most.
 
 ## Solution
 
